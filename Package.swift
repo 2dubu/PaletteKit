@@ -37,9 +37,6 @@ let package = Package(
             name: "PaletteKitTests",
             dependencies: ["PaletteKit"],
             path: "Tests/PaletteKitTests",
-            resources: [
-                .copy("Resources/goldens"),
-            ],
             swiftSettings: [
                 .swiftLanguageMode(.v6),
             ]

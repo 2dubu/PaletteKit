@@ -185,6 +185,16 @@ for how the app is wired.
 
 Per-release notes live on [GitHub Releases](https://github.com/2dubu/PaletteKit/releases).
 
+## Acknowledgements
+
+Thanks to [color-thief](https://github.com/lokesh/color-thief) by
+Lokesh Dhakar (MIT) for charting the way — the MMCQ algorithm family,
+OKLCH-first quantization, and the six-role swatch layout shaped
+PaletteKit's direction. PaletteKit reimagines those ideas for iOS with a
+Metal compute histogram, Display P3 preservation, Swift 6 concurrency, and
+CGImageSource-based decoding, while keeping the algorithmic core
+compatible so outputs can be cross-verified against the reference.
+
 ## License
 
 MIT. See [LICENSE](./LICENSE).

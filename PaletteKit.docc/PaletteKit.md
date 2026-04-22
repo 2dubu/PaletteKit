@@ -1,21 +1,70 @@
 # ``PaletteKit``
 
-High-performance iOS-native color palette extraction engine.
+High-performance iOS-native color palette extraction with MMCQ, OKLCH
+perceptual quantization, Display P3 wide-gamut support, semantic swatches,
+and an optional Metal backend.
 
 ## Overview
 
-PaletteKit extracts dominant colors, palettes, and semantic swatches from images using
-MMCQ (Modified Median Cut Quantization) with an optional Metal-accelerated backend.
-It ships rich `PaletteColor` objects, OKLCH perceptual quantization by default, and
-Display P3 wide-gamut support.
+PaletteKit extracts dominant colors, palettes, and semantic swatches from
+images on iOS. It is a ground-up Swift implementation inspired by
+[color-thief v3](https://github.com/lokesh/color-thief) that takes advantage
+of Apple-native tooling the web port cannot reach: `CGImageSource` thumbnail
+decoding, EXIF-aware orientation, Display P3 wide-gamut preservation, OKLCH
+perceptual quantization, and a Metal compute-shader histogram path.
 
-This DocC catalog will be fleshed out through the v0.x milestones and finalised for v1.0.
-See the repository `DESIGN_SPEC.md` for the full roadmap.
+- **Async-only, Sendable API.** Every entry point is `async throws`.
+  `PaletteExtractor` is a value type so you can use one per call site or
+  share it freely across actors.
+- **Rich `PaletteColor`.** Returns more than just RGB — hex, HSL, OKLCH,
+  WCAG contrast, text color recommendations, population, proportion.
+- **Strategy-pattern quantizers.** MMCQ on CPU by default, Metal for
+  large images, or bring your own `Quantizer`.
+- **Wide-gamut aware.** Display P3 images keep their chroma through the
+  OKLCH conversion instead of being clipped to sRGB.
+
+## Getting Started
+
+```swift
+import PaletteKit
+
+let extractor = PaletteExtractor()
+let color = try await extractor.dominantColor(from: .cgImage(image))
+print(color?.hex ?? "no dominant color")
+
+let palette = try await extractor.palette(from: .url(url))
+palette.forEach { print($0.hex, $0.proportion) }
+
+let swatches = try await extractor.swatches(from: .data(data))
+swatches.vibrant?.color.hex
+```
 
 ## Topics
 
-### Essentials
-- Coming in v0.1
+### Extracting colors
+- ``PaletteExtractor``
+- ``ExtractionOptions``
+- ``ImageSource``
 
-### Advanced
-- Coming in v0.3+
+### Result types
+- ``PaletteColor``
+- ``Palette``
+- ``Swatch``
+- ``SwatchMap``
+- ``SwatchRole``
+
+### Color math
+- ``RGB``
+- ``HSL``
+- ``OKLCH``
+- ``OKLCHConversion``
+
+### Custom backends
+- ``Quantizer``
+- ``MmcqQuantizer``
+- ``MetalMmcqQuantizer``
+- ``QuantizerSelection``
+
+### Errors & diagnostics
+- ``PaletteError``
+- ``ExtractionTimings``

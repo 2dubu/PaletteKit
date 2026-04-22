@@ -1,3 +1,3 @@
 import Foundation
 
-public let paletteKitVersion = "0.3.0"
+public let paletteKitVersion = "0.4.0"

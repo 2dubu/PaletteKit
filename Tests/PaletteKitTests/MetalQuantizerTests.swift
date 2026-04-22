@@ -18,8 +18,15 @@ struct MetalMmcqQuantizerTests {
         let metal = try await MetalMmcqQuantizer().quantize(pixels: pixels, maxColors: 3)
 
         try #require(cpu.count == metal.count)
-        let sortedCPU = cpu.sorted { $0.population > $1.population }
-        let sortedMetal = metal.sorted { $0.population > $1.population }
+        // Sort by full (population, r, g, b) tuple so ties resolve deterministically.
+        let sortedCPU = cpu.sorted {
+            ($0.population, $0.color.r, $0.color.g, $0.color.b)
+                > ($1.population, $1.color.r, $1.color.g, $1.color.b)
+        }
+        let sortedMetal = metal.sorted {
+            ($0.population, $0.color.r, $0.color.g, $0.color.b)
+                > ($1.population, $1.color.r, $1.color.g, $1.color.b)
+        }
         for (index, entry) in sortedCPU.enumerated() {
             #expect(abs(Int(entry.color.r) - Int(sortedMetal[index].color.r)) <= 2)
             #expect(abs(Int(entry.color.g) - Int(sortedMetal[index].color.g)) <= 2)

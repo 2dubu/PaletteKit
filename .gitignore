@@ -60,3 +60,22 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# Swift / Xcode build outputs
+.build/
+.swiftpm/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+Package.resolved
+
+# macOS
+.DS_Store
+
+# Local-only planning / design notes (not part of the public repo)
+DESIGN_SPEC.md
+NOTES.md
+SCRATCH.md
+TODO.md
+.notes/
+.scratch/

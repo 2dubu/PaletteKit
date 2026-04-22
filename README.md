@@ -2,6 +2,10 @@
 
 # PaletteKit
 
+[![Swift](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2F2dubu%2FPaletteKit%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/2dubu/PaletteKit)
+[![Platforms](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2F2dubu%2FPaletteKit%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/2dubu/PaletteKit)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 High-performance iOS-native color palette extraction. Swift Package,
 SwiftUI- and UIKit-friendly. Inspired by [color-thief](https://github.com/lokesh/color-thief)
 but reimagined for Apple platforms: Metal compute histogram, OKLCH

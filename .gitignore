@@ -74,6 +74,9 @@ Examples/*/*.xcodeproj
 Examples/*/*.xcworkspace
 Examples/*/DerivedData/
 
+# xcodebuild stray logs
+.derived-data-log-*
+
 # macOS
 .DS_Store
 

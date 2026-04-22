@@ -157,8 +157,16 @@ Generate locally with `xcodebuild docbuild` or browse on
 ## Example
 
 `Examples/PaletteKitDemo` — a minimal SwiftUI app showing a
-photo-picker → palette grid → swatches → timings flow. Drop-in source
-files; open in an iOS 17 Xcode project of your own.
+photo-picker → palette grid → swatches → timings flow.
+
+```bash
+make setup       # one-time: installs xcodegen via Homebrew if missing
+make demo-app    # generate PaletteKitDemo.xcodeproj and open it in Xcode
+                 # pick a simulator and press ⌘R to run
+```
+
+See [`Examples/PaletteKitDemo/README.md`](./Examples/PaletteKitDemo/README.md)
+for how the app is wired.
 
 ## Requirements
 

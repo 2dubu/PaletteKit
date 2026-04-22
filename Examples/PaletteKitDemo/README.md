@@ -5,29 +5,22 @@ palette, and display the resulting colors alongside the six semantic swatches.
 
 ## Prerequisites
 
-- Xcode 16+
+- macOS with Xcode 16+
 - iOS 17 simulator or device
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (one-time install)
+
+## Run it
+
+From the **repo root**:
 
 ```bash
-brew install xcodegen
+make demo-app
 ```
 
-## Generate and run
+This generates `PaletteKitDemo.xcodeproj` from `project.yml` and opens it in
+Xcode. Pick a simulator in the scheme bar and press **⌘R**.
 
-From the repo root:
-
-```bash
-cd Examples/PaletteKitDemo
-xcodegen
-open PaletteKitDemo.xcodeproj
-```
-
-Hit **Run** (⌘R) in Xcode. Pick a photo from the simulator/device library
-and PaletteKit will extract a palette and swatches in real time.
-
-The generated `PaletteKitDemo.xcodeproj` is **not committed** — regenerate
-whenever `project.yml` or the sources change.
+The first run triggers `make setup`, which installs `xcodegen` via Homebrew
+if it isn't already present. Subsequent runs skip that step.
 
 ## What it shows
 
@@ -38,13 +31,15 @@ whenever `project.yml` or the sources change.
   lightVibrant / lightMuted).
 - Timing panel with per-stage durations when `collectTimings: true`.
 
-## Tweaking the app
+## How it's wired
 
+- `project.yml` — XcodeGen spec (iOS 17+, Swift 6 strict concurrency, local
+  PaletteKit package reference).
 - `PaletteKitDemo/PaletteKitDemoApp.swift` — app entry point.
 - `PaletteKitDemo/ContentView.swift` — all UI and extraction logic.
-- `project.yml` — Xcode project spec. Bump `SWIFT_VERSION`, add frameworks,
-  or change bundle ID here, then re-run `xcodegen`.
+- `PaletteKitDemo/Info.plist` — `NSPhotoLibraryUsageDescription` and launch
+  screen.
 
-The app depends on the sibling `PaletteKit` Swift Package via the local
-path declared in `project.yml`, so source-level edits to PaletteKit are
-picked up on the next build.
+The generated `PaletteKitDemo.xcodeproj` is **not committed**. It is
+regenerated on every `make demo-app` from `project.yml`, so the source of
+truth is the YAML plus the Swift/plist files in this folder.

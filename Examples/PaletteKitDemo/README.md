@@ -3,26 +3,48 @@
 A minimal SwiftUI iOS app that uses PaletteKit to pick a photo, extract its
 palette, and display the resulting colors alongside the six semantic swatches.
 
-## How to run
+## Prerequisites
 
-1. Open Xcode 16+.
-2. File → New → Project → App (iOS, SwiftUI, Swift).
-3. Name it `PaletteKitDemo`. Set deployment target to iOS 17.
-4. File → Add Package Dependencies… → Add Local… → choose this repository's
-   root (the folder containing `Package.swift`).
-5. Replace the generated `ContentView.swift` and `PaletteKitDemoApp.swift`
-   with the files under `PaletteKitDemo/` in this folder.
-6. Run.
+- Xcode 16+
+- iOS 17 simulator or device
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (one-time install)
+
+```bash
+brew install xcodegen
+```
+
+## Generate and run
+
+From the repo root:
+
+```bash
+cd Examples/PaletteKitDemo
+xcodegen
+open PaletteKitDemo.xcodeproj
+```
+
+Hit **Run** (⌘R) in Xcode. Pick a photo from the simulator/device library
+and PaletteKit will extract a palette and swatches in real time.
+
+The generated `PaletteKitDemo.xcodeproj` is **not committed** — regenerate
+whenever `project.yml` or the sources change.
 
 ## What it shows
 
 - `PhotosPicker` integration: pick any photo.
 - Dominant color strip at the top.
 - Top-10 palette grid sorted by population.
-- Semantic swatches panel (vibrant / muted / dark-vibrant / dark-muted /
-  light-vibrant / light-muted).
-- Timing panel displaying per-stage durations when you enable `collectTimings`.
+- Semantic swatches panel (vibrant / muted / darkVibrant / darkMuted /
+  lightVibrant / lightMuted).
+- Timing panel with per-stage durations when `collectTimings: true`.
 
-This demo is intentionally hosted outside the Swift Package target so the
-library has zero UI dependency. It can be copied verbatim into any Xcode
-project.
+## Tweaking the app
+
+- `PaletteKitDemo/PaletteKitDemoApp.swift` — app entry point.
+- `PaletteKitDemo/ContentView.swift` — all UI and extraction logic.
+- `project.yml` — Xcode project spec. Bump `SWIFT_VERSION`, add frameworks,
+  or change bundle ID here, then re-run `xcodegen`.
+
+The app depends on the sibling `PaletteKit` Swift Package via the local
+path declared in `project.yml`, so source-level edits to PaletteKit are
+picked up on the next build.

@@ -69,6 +69,11 @@ DerivedData/
 *.xcworkspace/xcuserdata/
 Package.resolved
 
+# XcodeGen-generated projects (regenerate with `xcodegen`)
+Examples/*/*.xcodeproj
+Examples/*/*.xcworkspace
+Examples/*/DerivedData/
+
 # macOS
 .DS_Store
 

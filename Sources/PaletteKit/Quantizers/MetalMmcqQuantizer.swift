@@ -1,6 +1,6 @@
 import Foundation
 #if canImport(Metal)
-import Metal
+@preconcurrency import Metal
 
 public struct MetalMmcqQuantizer: Quantizer {
     public let name = "MMCQ-Metal"

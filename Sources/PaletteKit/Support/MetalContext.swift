@@ -1,6 +1,6 @@
 import Foundation
 #if canImport(Metal)
-import Metal
+@preconcurrency import Metal
 
 /// Caches the `MTLDevice`, `MTLCommandQueue`, and the histogram pipeline so the cold-start
 /// cost (shader compile + pipeline build) is paid at most once per process.

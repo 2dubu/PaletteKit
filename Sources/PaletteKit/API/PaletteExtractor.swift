@@ -112,6 +112,16 @@ public struct PaletteExtractor: Sendable {
         return palette.dominant
     }
 
+    public func swatches(
+        from source: ImageSource,
+        options: ExtractionOptions = .init()
+    ) async throws -> SwatchMap {
+        var opts = options
+        if opts.colorCount < 16 { opts.colorCount = 16 }
+        let palette = try await palette(from: source, options: opts)
+        return SwatchClassifier().classify(palette: palette)
+    }
+
     private func emptyPipeline(
         options: ExtractionOptions,
         buffer: PixelBuffer,

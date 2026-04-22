@@ -1,3 +1,4 @@
 import Foundation
 
-public let paletteKitVersion = "0.5.0"
+/// The currently-shipped PaletteKit version string. Follows semver.
+public let paletteKitVersion = "1.0.0"

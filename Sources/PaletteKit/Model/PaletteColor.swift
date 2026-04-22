@@ -1,8 +1,25 @@
 import Foundation
 
+/// A single color extracted from an image, including its population within the
+/// source palette and common presentation helpers.
+///
+/// `PaletteColor` stores the raw RGB triple and exposes lazy, cached accessors for
+/// `hex`, `hsl`, `oklch`, `luminance`, `isDark`/`isLight`, a readable
+/// `textColor`, and a WCAG `contrast` block. All computations are deterministic
+/// and do not allocate.
+///
+/// Values compare by full RGB equality regardless of population so they can be
+/// used as `Set` / `Dictionary` keys.
 public struct PaletteColor: Hashable, Sendable {
+    /// The raw 8-bit RGB channels.
     public let rgb: RGB
+    /// How many pixels from the source image contributed to this color.
+    ///
+    /// Units are relative — the exact count is meaningful only compared to
+    /// other colors in the same ``Palette``. Use ``proportion`` for the
+    /// normalized share.
     public let population: Int
+    /// Share of the total palette population, in `0...1`.
     public let proportion: Double
 
     public init(rgb: RGB, population: Int = 0, proportion: Double = 0) {

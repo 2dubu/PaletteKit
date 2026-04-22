@@ -50,6 +50,8 @@ public enum QuantizerSelection: Sendable {
     }
 }
 
+/// Tunable parameters for ``PaletteExtractor`` calls. Defaults match
+/// color-thief v3 so migrations produce comparable results.
 public struct ExtractionOptions: Sendable {
     public var colorCount: Int
     public var quality: Quality

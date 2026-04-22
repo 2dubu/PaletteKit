@@ -1,17 +1,45 @@
 import CoreGraphics
 import Foundation
 
+/// Entry point for extracting palettes, dominant colors, and semantic swatches from an image.
+///
+/// `PaletteExtractor` is a `Sendable` value type with no mutable state: create one per
+/// call site, share one across actors, or cache a single static instance — all behave the
+/// same. All public methods are `async throws` and honour cooperative cancellation via
+/// `Task.cancel()`.
+///
+/// ```swift
+/// let extractor = PaletteExtractor()
+/// let palette = try await extractor.palette(from: .url(imageURL))
+/// ```
+///
+/// See ``ExtractionOptions`` for tunable parameters and
+/// <doc:GettingStarted> for a runnable example.
 public struct PaletteExtractor: Sendable {
     private let loader: PixelLoader
     private let sampler: PixelSampler
     private let builder: PaletteBuilder
 
+    /// Create a new extractor. Extractors are cheap: construct as needed.
     public init() {
         self.loader = PixelLoader()
         self.sampler = PixelSampler()
         self.builder = PaletteBuilder()
     }
 
+    /// Extract a palette of representative colors.
+    ///
+    /// Runs the full pipeline: decode → downsample → filter → (optional OKLCH
+    /// conversion) → quantize → assemble. Returns a ``Palette`` sorted by
+    /// population.
+    ///
+    /// - Parameters:
+    ///   - source: Where to read pixels from. See ``ImageSource``.
+    ///   - options: Quality, filters, quantizer selection, etc. See
+    ///     ``ExtractionOptions``.
+    /// - Throws: ``PaletteError`` for decoding failures, empty input, or
+    ///   filter-empty input when `fallbackStrategy == .fail`. `CancellationError`
+    ///   when the calling task is cancelled.
     public func palette(
         from source: ImageSource,
         options: ExtractionOptions = .init()
@@ -102,6 +130,11 @@ public struct PaletteExtractor: Sendable {
         )
     }
 
+    /// Convenience: returns the single most representative color.
+    ///
+    /// Runs a 5-color extraction internally and returns the color with the
+    /// highest population. Use ``palette(from:options:)`` instead when you need
+    /// the full result.
     public func dominantColor(
         from source: ImageSource,
         options: ExtractionOptions = .init()
@@ -112,6 +145,11 @@ public struct PaletteExtractor: Sendable {
         return palette.dominant
     }
 
+    /// Extract semantic swatches classified into six OKLCH-based roles.
+    ///
+    /// Runs a richer (16-color) extraction internally so the classifier has
+    /// enough candidates for every role. Roles that don't clear their
+    /// lightness / chroma bands are returned as `nil`.
     public func swatches(
         from source: ImageSource,
         options: ExtractionOptions = .init()

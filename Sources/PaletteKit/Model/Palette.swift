@@ -25,6 +25,12 @@ public struct ExtractionTimings: Sendable {
     }
 }
 
+/// A sorted collection of ``PaletteColor`` values returned by
+/// ``PaletteExtractor/palette(from:options:)``.
+///
+/// Colors are ordered by population (most representative first). Use
+/// ``dominant`` for the most prominent color, or iterate like any
+/// `Collection` of ``PaletteColor``.
 public struct Palette: Sendable {
     public let colors: [PaletteColor]
     public let colorSpaceUsed: ColorSpace

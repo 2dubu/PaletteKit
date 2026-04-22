@@ -24,10 +24,10 @@ let package = Package(
         .target(
             name: "PaletteKit",
             path: "Sources/PaletteKit",
-            resources: [
-                // Metal shader resources will be added here as they ship.
-                // .process("Metal"),
+            exclude: [
+                "Metal/Histogram.metal",
             ],
+            resources: [],
             swiftSettings: [
                 .swiftLanguageMode(.v6),
                 .enableUpcomingFeature("ExistentialAny"),

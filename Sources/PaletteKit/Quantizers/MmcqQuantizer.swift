@@ -28,19 +28,29 @@ enum MmcqEngine {
         (r << (2 * sigBits)) + (g << sigBits) + b
     }
 
-    static func quantize(pixels: [PixelTriplet], maxColors: Int) throws -> [QuantizedColor] {
+    static func quantize(
+        pixels: [PixelTriplet],
+        maxColors: Int,
+        providedHistogram: [UInt32]? = nil
+    ) throws -> [QuantizedColor] {
         guard !pixels.isEmpty, maxColors >= 2, maxColors <= 256 else { return [] }
 
         if let shortCircuit = try shortCircuitUniqueColors(pixels: pixels, maxColors: maxColors) {
             return shortCircuit
         }
 
-        var histogram = [UInt32](repeating: 0, count: histSize)
-        for pixel in pixels {
-            let r = Int(pixel.r) >> rShift
-            let g = Int(pixel.g) >> rShift
-            let b = Int(pixel.b) >> rShift
-            histogram[colorIndex(r, g, b)] &+= 1
+        let histogram: [UInt32]
+        if let providedHistogram, providedHistogram.count == histSize {
+            histogram = providedHistogram
+        } else {
+            var working = [UInt32](repeating: 0, count: histSize)
+            for pixel in pixels {
+                let r = Int(pixel.r) >> rShift
+                let g = Int(pixel.g) >> rShift
+                let b = Int(pixel.b) >> rShift
+                working[colorIndex(r, g, b)] &+= 1
+            }
+            histogram = working
         }
 
         let initialBox = try VBox.from(pixels: pixels)

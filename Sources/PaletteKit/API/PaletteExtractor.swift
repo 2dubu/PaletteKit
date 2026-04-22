@@ -137,17 +137,29 @@ public struct PaletteExtractor: Sendable {
 
     private func resolveQuantizer(options: ExtractionOptions, pixelCount: Int) -> any Quantizer {
         switch options.quantizer {
-        case .auto, .cpu:
-            // v0.1 always uses the CPU backend. The Metal backend lands in v0.2 and the
-            // selection threshold is tuned there.
+        case .auto:
+            return pixelCount >= PaletteExtractor.metalAutoThreshold
+                ? metalOrCPUFallback()
+                : MmcqQuantizer()
+        case .cpu:
             return MmcqQuantizer()
         case .metal:
-            // v0.1 has no Metal backend yet; gracefully downgrade to CPU with a log note.
-            PaletteKitLog.extraction.notice("Metal quantizer requested but unavailable in v0.1 — using CPU.")
-            return MmcqQuantizer()
+            return metalOrCPUFallback()
         case .custom(let quantizer):
             return quantizer
         }
+    }
+
+    /// Jointly chosen threshold. Subject to retuning once v0.4+ benchmarks land.
+    static let metalAutoThreshold = 500_000
+
+    private func metalOrCPUFallback() -> any Quantizer {
+        #if canImport(Metal)
+        return MetalMmcqQuantizer()
+        #else
+        PaletteKitLog.extraction.notice("Metal requested but unavailable on this platform — using CPU.")
+        return MmcqQuantizer()
+        #endif
     }
 
     private func validate(options: ExtractionOptions) throws {

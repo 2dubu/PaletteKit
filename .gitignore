@@ -87,3 +87,6 @@ SCRATCH.md
 TODO.md
 .notes/
 .scratch/
+
+# Local-only bench results from Examples/PaletteKitDemo
+benchmark/

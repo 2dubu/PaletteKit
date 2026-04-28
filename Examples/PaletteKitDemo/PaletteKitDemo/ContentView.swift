@@ -56,6 +56,16 @@ struct ContentView: View {
                 .padding()
             }
             .navigationTitle("PaletteKit Demo")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        BenchView()
+                    } label: {
+                        Image(systemName: "speedometer")
+                    }
+                    .accessibilityLabel("Benchmarks")
+                }
+            }
         }
         .onChange(of: pickedItem) { _, newValue in
             Task { await loadImage(from: newValue) }

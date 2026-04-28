@@ -68,34 +68,18 @@ dependencies: [
 
 Minimum iOS 17 · Swift 6.0 · Xcode 16+.
 
-## API at a glance
+## API
 
-| Call | Returns |
-|---|---|
-| `extractor.dominantColor(from:options:)` | `PaletteColor?` |
-| `extractor.palette(from:options:)` | `Palette` |
-| `extractor.swatches(from:options:)` | `SwatchMap` |
+```swift
+extractor.dominantColor(from:)   // PaletteColor?
+extractor.palette(from:)          // Palette
+extractor.swatches(from:)         // SwatchMap
+```
 
-| `ImageSource` case | Input |
-|---|---|
-| `.cgImage(CGImage)` | already-decoded image |
-| `.data(Data)` | raw image data (JPEG, HEIC, PNG, …) |
-| `.url(URL)` | local or remote image URL |
-
-| `ExtractionOptions` | Default | Purpose |
-|---|---|---|
-| `colorCount` | 10 | palette size (2–256) |
-| `quality` | `.stride(10)` | pixel stride |
-| `colorSpace` | `.oklch` | quantization space |
-| `ignoreWhite` | `true` | filter near-white pixels |
-| `whiteThreshold` | 250 | channel threshold for "white" |
-| `alphaThreshold` | 125 | drop pixels with alpha below |
-| `minSaturation` | 0 | drop low-saturation pixels |
-| `fallbackStrategy` | `.relax` | empty-filter recovery |
-| `autoOrient` | `true` | respect EXIF orientation |
-| `downsample` | `.automatic(maxPixels: 1_000_000)` | decode-time downsample |
-| `quantizer` | `.auto` | `.auto` / `.cpu` / `.metal` / `.custom` |
-| `collectTimings` | `false` | populate `palette.timings` |
+`ImageSource` cases (`.cgImage` / `.data` / `.url`) and the full
+`ExtractionOptions` surface (`colorCount`, `quality`, `colorSpace`,
+`downsample`, `quantizer`, …) are documented in the
+[DocC reference](https://swiftpackageindex.com/2dubu/PaletteKit/documentation/palettekit).
 
 ## Color space handling
 
@@ -171,6 +155,22 @@ make demo-app    # generate PaletteKitDemo.xcodeproj and open it in Xcode
 
 See [`Examples/PaletteKitDemo/README.md`](./Examples/PaletteKitDemo/README.md)
 for how the app is wired.
+
+## Benchmark on your device
+
+The demo app ships with an on-device benchmark harness. Pick a real
+photo or use the synthesized fixture, vary size / quantizer /
+downsample, and export per-stage timings (decode, sample, quantize)
+as CSV for cross-device comparison.
+
+```bash
+make demo-app    # build & run on a connected iPhone, tap the
+                 # speedometer icon in the top-right
+```
+
+Tap **Run**, watch the chart fill in, then **Export** as Raw CSV or
+Summary CSV via the share sheet. Save exports under `benchmark/`
+(gitignored) for local-only analysis.
 
 ## Requirements
 

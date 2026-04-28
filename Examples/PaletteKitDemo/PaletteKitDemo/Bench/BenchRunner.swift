@@ -5,11 +5,25 @@ import PaletteKit
 @MainActor
 final class BenchRunner: ObservableObject {
     struct Configuration: Equatable {
+        enum SourceKind: String, CaseIterable, Hashable {
+            case synthesized
+            case photo
+        }
+
         var includeAutoDownsample = true
         var includeRawDownsample = false
         var include8K = false
         var warmupRuns = 1
         var measuredRuns = 5
+        /// Optional human-readable note attached to the run — flows into
+        /// the CSV header so cross-device / cross-condition comparisons
+        /// can be tagged ("iPhone 15 Pro / quiet", "after game", etc).
+        var runNote: String = ""
+        /// Source for the input image at each grid size. Synthesized
+        /// generates a deterministic gradient + noise + blobs scene;
+        /// photo expects the caller to provide a CGImage that gets
+        /// center-cropped and resized to each grid side.
+        var sourceKind: SourceKind = .synthesized
     }
 
     enum Phase: Equatable {
@@ -23,6 +37,10 @@ final class BenchRunner: ObservableObject {
     @Published private(set) var samples: [BenchSample] = []
     @Published private(set) var summaries: [BenchSummary] = []
     @Published private(set) var startedAt: Date?
+    @Published private(set) var runNote: String = ""
+    /// Description of the source used (e.g. "synthesized" or
+    /// "photo 4032x3024"). Persisted into CSV headers.
+    @Published private(set) var sourceDescription: String = "synthesized"
 
     private var task: Task<Void, Never>?
     private let extractor = PaletteExtractor()
@@ -30,6 +48,14 @@ final class BenchRunner: ObservableObject {
     var isRunning: Bool {
         if case .running = phase { return true }
         return false
+    }
+
+    var failureCount: Int {
+        samples.filter { !$0.isWarmup && $0.errorMessage != nil }.count
+    }
+
+    var firstFailureMessage: String? {
+        samples.first(where: { $0.errorMessage != nil })?.errorMessage
     }
 
     func cancel() {
@@ -43,10 +69,20 @@ final class BenchRunner: ObservableObject {
         summaries = []
         phase = .idle
         startedAt = nil
+        runNote = ""
+        sourceDescription = "synthesized"
     }
 
-    func run(configuration: Configuration) {
+    func run(
+        configuration: Configuration,
+        photoImage: CGImage? = nil,
+        photoOriginalSize: CGSize? = nil
+    ) {
         cancel()
+        if configuration.sourceKind == .photo, photoImage == nil {
+            phase = .failed(message: "Photo source selected but no image was loaded.")
+            return
+        }
         let cases = Self.makeCases(configuration: configuration)
         let totalRuns = cases.count * (configuration.warmupRuns + configuration.measuredRuns)
         guard totalRuns > 0 else {
@@ -56,17 +92,57 @@ final class BenchRunner: ObservableObject {
         samples = []
         summaries = []
         startedAt = Date()
+        runNote = configuration.runNote.trimmingCharacters(in: .whitespacesAndNewlines)
+        sourceDescription = Self.describeSource(
+            kind: configuration.sourceKind,
+            originalSize: photoOriginalSize
+        )
         phase = .running(currentIndex: 0, total: totalRuns, currentLabel: cases.first?.label ?? "")
 
         task = Task { [weak self] in
             guard let self else { return }
-            await self.execute(cases: cases, configuration: configuration, totalRuns: totalRuns)
+            await self.execute(
+                cases: cases,
+                configuration: configuration,
+                photoImage: photoImage,
+                totalRuns: totalRuns
+            )
+        }
+    }
+
+    private func makeImage(
+        for benchCase: BenchCase,
+        configuration: Configuration,
+        photoImage: CGImage?
+    ) -> CGImage? {
+        switch configuration.sourceKind {
+        case .synthesized:
+            return BenchFixture.makePhotoLike(side: benchCase.pixelSide)
+        case .photo:
+            guard let photo = photoImage else { return nil }
+            return BenchFixture.resizeToSquare(photo, side: benchCase.pixelSide)
+        }
+    }
+
+    private static func describeSource(
+        kind: Configuration.SourceKind,
+        originalSize: CGSize?
+    ) -> String {
+        switch kind {
+        case .synthesized:
+            return "synthesized"
+        case .photo:
+            if let s = originalSize {
+                return "photo \(Int(s.width))x\(Int(s.height))"
+            }
+            return "photo"
         }
     }
 
     private func execute(
         cases: [BenchCase],
         configuration: Configuration,
+        photoImage: CGImage?,
         totalRuns: Int
     ) async {
         var collected: [BenchSample] = []
@@ -74,7 +150,14 @@ final class BenchRunner: ObservableObject {
 
         for benchCase in cases {
             if Task.isCancelled { break }
-            let image = BenchFixture.makePhotoLike(side: benchCase.pixelSide)
+            guard let image = makeImage(
+                for: benchCase,
+                configuration: configuration,
+                photoImage: photoImage
+            ) else {
+                phase = .failed(message: "Photo source went away mid-run.")
+                return
+            }
             let runs = configuration.warmupRuns + configuration.measuredRuns
             for runIndex in 0..<runs {
                 if Task.isCancelled { break }
@@ -180,6 +263,10 @@ final class BenchRunner: ObservableObject {
             guard !measured.isEmpty else { continue }
             let totalsMs = measured.map { $0.totalSeconds * 1000 }
             let quantizesMs = measured.map { $0.quantizeSeconds * 1000 }
+            let n = Double(measured.count)
+            let decodeMean = measured.reduce(0.0) { $0 + $1.decodeSeconds * 1000 } / n
+            let sampleMean = measured.reduce(0.0) { $0 + $1.sampleSeconds * 1000 } / n
+            let quantizeMean = measured.reduce(0.0) { $0 + $1.quantizeSeconds * 1000 } / n
             let engine = measured.last?.engineUsed ?? "?"
             let errorCount = measured.filter { $0.errorMessage != nil }.count
             summaries.append(
@@ -193,6 +280,9 @@ final class BenchRunner: ObservableObject {
                     totalMaxMs: totalsMs.max() ?? 0,
                     quantizeP50ms: percentile(quantizesMs, p: 0.50),
                     quantizeP95ms: percentile(quantizesMs, p: 0.95),
+                    decodeMeanMs: decodeMean,
+                    sampleMeanMs: sampleMean,
+                    quantizeMeanMs: quantizeMean,
                     engineUsed: engine,
                     errorCount: errorCount
                 )

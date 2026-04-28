@@ -91,4 +91,43 @@ enum BenchFixture {
     private static func clamp01(_ value: Double) -> Double {
         min(max(value, 0), 1)
     }
+
+    /// Center-crops `source` to a square and rescales to `side × side`.
+    /// Used when the bench source is a real photo: the bench grid is
+    /// driven by side length, so all photos go through the same
+    /// "square at size N" normalization regardless of original aspect.
+    /// sRGB / premultipliedLast to match the synthesized fixture so
+    /// quantize work is apples-to-apples across source kinds.
+    static func resizeToSquare(_ source: CGImage, side: Int) -> CGImage {
+        precondition(side > 0)
+        let srcW = source.width
+        let srcH = source.height
+        let cropEdge = min(srcW, srcH)
+        let cropX = (srcW - cropEdge) / 2
+        let cropY = (srcH - cropEdge) / 2
+
+        let cropped = source.cropping(
+            to: CGRect(x: cropX, y: cropY, width: cropEdge, height: cropEdge)
+        ) ?? source
+
+        let bytesPerRow = side * 4
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
+            | CGBitmapInfo.byteOrder32Big.rawValue
+
+        guard let context = CGContext(
+            data: nil,
+            width: side,
+            height: side,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else {
+            return cropped
+        }
+        context.interpolationQuality = .high
+        context.draw(cropped, in: CGRect(x: 0, y: 0, width: side, height: side))
+        return context.makeImage() ?? cropped
+    }
 }

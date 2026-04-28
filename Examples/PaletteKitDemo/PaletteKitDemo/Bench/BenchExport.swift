@@ -1,4 +1,5 @@
 import Foundation
+import PaletteKit
 
 enum BenchExport {
     /// Per-run rows. Useful for plotting the full distribution including
@@ -6,14 +7,22 @@ enum BenchExport {
     static func rawCSV(
         device: DeviceInfo,
         startedAt: Date?,
+        runNote: String,
+        sourceDescription: String,
         samples: [BenchSample]
     ) -> String {
         var lines: [String] = []
+        lines.append("# palettekit_version,\(paletteKitVersion)")
         lines.append("# device,\(device.model)")
+        lines.append("# device_marketing,\(device.marketingName)")
         lines.append("# os,\(device.osVersion)")
         lines.append("# cpu_cores,\(device.processorCount)")
+        lines.append("# source,\(escape(sourceDescription))")
         if let startedAt {
             lines.append("# started_at,\(iso8601(startedAt))")
+        }
+        if !runNote.isEmpty {
+            lines.append("# note,\(escape(runNote))")
         }
         lines.append(
             "case_id,size_px,quantizer,downsample,run_index,is_warmup,total_ms,decode_ms,sample_ms,quantize_ms,engine,palette_count,error"
@@ -47,13 +56,21 @@ enum BenchExport {
     /// the table you read first when comparing runs across devices.
     static func summaryCSV(
         device: DeviceInfo,
+        runNote: String,
+        sourceDescription: String,
         summaries: [BenchSummary]
     ) -> String {
         var lines: [String] = []
+        lines.append("# palettekit_version,\(paletteKitVersion)")
         lines.append("# device,\(device.model)")
+        lines.append("# device_marketing,\(device.marketingName)")
         lines.append("# os,\(device.osVersion)")
+        lines.append("# source,\(escape(sourceDescription))")
+        if !runNote.isEmpty {
+            lines.append("# note,\(escape(runNote))")
+        }
         lines.append(
-            "size_px,quantizer,downsample,runs,total_p50_ms,total_p95_ms,total_min_ms,total_max_ms,quantize_p50_ms,quantize_p95_ms,engine,errors"
+            "size_px,quantizer,downsample,runs,total_p50_ms,total_p95_ms,total_min_ms,total_max_ms,quantize_p50_ms,quantize_p95_ms,decode_mean_ms,sample_mean_ms,quantize_mean_ms,engine,errors"
         )
         for s in summaries {
             let row: [String] = [
@@ -67,6 +84,9 @@ enum BenchExport {
                 msFromMs(s.totalMaxMs),
                 msFromMs(s.quantizeP50ms),
                 msFromMs(s.quantizeP95ms),
+                msFromMs(s.decodeMeanMs),
+                msFromMs(s.sampleMeanMs),
+                msFromMs(s.quantizeMeanMs),
                 escape(s.engineUsed),
                 String(s.errorCount),
             ]

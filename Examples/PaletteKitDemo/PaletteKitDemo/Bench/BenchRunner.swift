@@ -245,7 +245,7 @@ final class BenchRunner: ObservableObject {
             for benchCase in cases {
                 if Task.isCancelled { break }
                 let pseudoConfig = Configuration(sourceKind: scenario.sourceKind)
-                guard let source = makeSource(
+                guard let source = await makeSource(
                     for: benchCase,
                     configuration: pseudoConfig,
                     photoImage: photoImage,
@@ -290,13 +290,19 @@ final class BenchRunner: ObservableObject {
         configuration: Configuration,
         photoImage: CGImage?,
         photoData: Data?
-    ) -> ImageSource? {
+    ) async -> ImageSource? {
         switch configuration.sourceKind {
         case .synthesized:
-            return .cgImage(BenchFixture.makePhotoLike(side: benchCase.pixelSide))
+            let side = benchCase.pixelSide
+            return await Task.detached(priority: .userInitiated) {
+                ImageSource.cgImage(BenchFixture.makePhotoLike(side: side))
+            }.value
         case .photo:
             guard let photo = photoImage else { return nil }
-            return .cgImage(BenchFixture.resizeToSquare(photo, side: benchCase.pixelSide))
+            let side = benchCase.pixelSide
+            return await Task.detached(priority: .userInitiated) {
+                ImageSource.cgImage(BenchFixture.resizeToSquare(photo, side: side))
+            }.value
         case .photoData:
             guard let data = photoData else { return nil }
             return .data(data)
@@ -335,7 +341,7 @@ final class BenchRunner: ObservableObject {
 
         for benchCase in cases {
             if Task.isCancelled { break }
-            guard let source = makeSource(
+            guard let source = await makeSource(
                 for: benchCase,
                 configuration: configuration,
                 photoImage: photoImage,
@@ -381,13 +387,13 @@ final class BenchRunner: ObservableObject {
         scenario: String? = nil
     ) async -> BenchSample {
         let options = benchCase.paletteOptions()
+        let extractor = self.extractor
         let clock = ContinuousClock()
         let started = clock.now
         do {
-            let palette = try await extractor.palette(
-                from: source,
-                options: options
-            )
+            let palette = try await Task.detached(priority: .userInitiated) {
+                try await extractor.palette(from: source, options: options)
+            }.value
             let elapsed = started.duration(to: clock.now)
             let timings = palette.timings
             return BenchSample(

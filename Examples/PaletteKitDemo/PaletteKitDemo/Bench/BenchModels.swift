@@ -59,6 +59,8 @@ struct BenchCase: Identifiable, Hashable {
 /// excluded from summary statistics.
 struct BenchSample: Identifiable, Hashable {
     let id = UUID()
+    /// Suite scenario id (nil for single-config runs).
+    let scenario: String?
     let caseId: String
     let runIndex: Int
     let isWarmup: Bool
@@ -74,6 +76,7 @@ struct BenchSample: Identifiable, Hashable {
 /// Aggregated stats for one BenchCase (post-warmup runs only).
 struct BenchSummary: Identifiable, Hashable {
     let id: String
+    let scenario: String?
     let benchCase: BenchCase
     let runCount: Int
     let totalP50ms: Double

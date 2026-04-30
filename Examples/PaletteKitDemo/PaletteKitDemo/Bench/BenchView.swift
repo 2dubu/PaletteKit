@@ -39,6 +39,16 @@ struct BenchView: View {
         }
         .navigationTitle("Benchmarks")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    BenchSuiteView()
+                } label: {
+                    Image(systemName: "play.square.stack")
+                }
+                .accessibilityLabel("Run Suite")
+            }
+        }
         .onChange(of: photoItem) { _, newItem in
             Task { await loadPhoto(from: newItem) }
         }

@@ -108,11 +108,13 @@ struct BenchView: View {
                 isOn: $configuration.includeRawDownsample,
                 info: .rawDownsample
             )
-            configToggle(
-                "Include 8192² (high memory)",
-                isOn: $configuration.include8K,
-                info: .include8K
-            )
+            if configuration.sourceKind == .synthesized {
+                configToggle(
+                    "Include 8192² (high memory)",
+                    isOn: $configuration.include8K,
+                    info: .include8K
+                )
+            }
             configStepper(
                 "Warmup runs: \(configuration.warmupRuns)",
                 value: $configuration.warmupRuns,

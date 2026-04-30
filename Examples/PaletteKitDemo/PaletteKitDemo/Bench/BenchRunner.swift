@@ -236,7 +236,9 @@ final class BenchRunner: ObservableObject {
 
     static func makeCases(configuration: Configuration) -> [BenchCase] {
         var sides: [Int] = [256, 512, 1024, 2048, 4096]
-        if configuration.include8K { sides.append(8192) }
+        if configuration.include8K && configuration.sourceKind == .synthesized {
+            sides.append(8192)
+        }
 
         var downsampleModes: [BenchCase.DownsampleKind] = []
         if configuration.includeAutoDownsample { downsampleModes.append(.auto) }

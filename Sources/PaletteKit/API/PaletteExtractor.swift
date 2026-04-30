@@ -198,7 +198,7 @@ public struct PaletteExtractor: Sendable {
         }
     }
 
-    /// Jointly chosen threshold. Subject to retuning once v0.4+ benchmarks land.
+    /// Sampled pixel count at which `.auto` switches from CPU to Metal.
     static let metalAutoThreshold = 500_000
 
     private func metalOrCPUFallback() -> any Quantizer {

@@ -8,6 +8,11 @@ final class BenchRunner: ObservableObject {
         enum SourceKind: String, CaseIterable, Hashable {
             case synthesized
             case photo
+            /// Pass the raw photo bytes directly via `.data(...)` so PaletteKit's
+            /// ImageIO thumbnail fast-path is exercised on the user's HEIC/JPEG.
+            /// Compare against `.photo` (which decodes externally and passes
+            /// `.cgImage(...)`) to measure the saved decode/downsample cost.
+            case photoData
         }
 
         var includeAutoDownsample = true
@@ -76,12 +81,21 @@ final class BenchRunner: ObservableObject {
     func run(
         configuration: Configuration,
         photoImage: CGImage? = nil,
+        photoData: Data? = nil,
         photoOriginalSize: CGSize? = nil
     ) {
         cancel()
-        if configuration.sourceKind == .photo, photoImage == nil {
+        switch configuration.sourceKind {
+        case .synthesized:
+            break
+        case .photo where photoImage == nil:
             phase = .failed(message: "Photo source selected but no image was loaded.")
             return
+        case .photoData where photoData == nil:
+            phase = .failed(message: "Photo Data source selected but no image bytes are available.")
+            return
+        default:
+            break
         }
         let cases = Self.makeCases(configuration: configuration)
         let totalRuns = cases.count * (configuration.warmupRuns + configuration.measuredRuns)
@@ -105,22 +119,27 @@ final class BenchRunner: ObservableObject {
                 cases: cases,
                 configuration: configuration,
                 photoImage: photoImage,
+                photoData: photoData,
                 totalRuns: totalRuns
             )
         }
     }
 
-    private func makeImage(
+    private func makeSource(
         for benchCase: BenchCase,
         configuration: Configuration,
-        photoImage: CGImage?
-    ) -> CGImage? {
+        photoImage: CGImage?,
+        photoData: Data?
+    ) -> ImageSource? {
         switch configuration.sourceKind {
         case .synthesized:
-            return BenchFixture.makePhotoLike(side: benchCase.pixelSide)
+            return .cgImage(BenchFixture.makePhotoLike(side: benchCase.pixelSide))
         case .photo:
             guard let photo = photoImage else { return nil }
-            return BenchFixture.resizeToSquare(photo, side: benchCase.pixelSide)
+            return .cgImage(BenchFixture.resizeToSquare(photo, side: benchCase.pixelSide))
+        case .photoData:
+            guard let data = photoData else { return nil }
+            return .data(data)
         }
     }
 
@@ -136,6 +155,11 @@ final class BenchRunner: ObservableObject {
                 return "photo \(Int(s.width))x\(Int(s.height))"
             }
             return "photo"
+        case .photoData:
+            if let s = originalSize {
+                return "photoData \(Int(s.width))x\(Int(s.height))"
+            }
+            return "photoData"
         }
     }
 
@@ -143,6 +167,7 @@ final class BenchRunner: ObservableObject {
         cases: [BenchCase],
         configuration: Configuration,
         photoImage: CGImage?,
+        photoData: Data?,
         totalRuns: Int
     ) async {
         var collected: [BenchSample] = []
@@ -150,12 +175,13 @@ final class BenchRunner: ObservableObject {
 
         for benchCase in cases {
             if Task.isCancelled { break }
-            guard let image = makeImage(
+            guard let source = makeSource(
                 for: benchCase,
                 configuration: configuration,
-                photoImage: photoImage
+                photoImage: photoImage,
+                photoData: photoData
             ) else {
-                phase = .failed(message: "Photo source went away mid-run.")
+                phase = .failed(message: "Source went away mid-run.")
                 return
             }
             let runs = configuration.warmupRuns + configuration.measuredRuns
@@ -170,7 +196,7 @@ final class BenchRunner: ObservableObject {
                 )
                 let sample = await runSingle(
                     benchCase: benchCase,
-                    image: image,
+                    source: source,
                     runIndex: runIndex,
                     isWarmup: isWarmup
                 )
@@ -189,7 +215,7 @@ final class BenchRunner: ObservableObject {
 
     private func runSingle(
         benchCase: BenchCase,
-        image: CGImage,
+        source: ImageSource,
         runIndex: Int,
         isWarmup: Bool
     ) async -> BenchSample {
@@ -198,7 +224,7 @@ final class BenchRunner: ObservableObject {
         let started = clock.now
         do {
             let palette = try await extractor.palette(
-                from: .cgImage(image),
+                from: source,
                 options: options
             )
             let elapsed = started.duration(to: clock.now)
@@ -235,15 +261,28 @@ final class BenchRunner: ObservableObject {
     // MARK: - Cases
 
     static func makeCases(configuration: Configuration) -> [BenchCase] {
-        var sides: [Int] = [256, 512, 1024, 2048, 4096]
-        if configuration.include8K && configuration.sourceKind == .synthesized {
-            sides.append(8192)
-        }
-
         var downsampleModes: [BenchCase.DownsampleKind] = []
         if configuration.includeAutoDownsample { downsampleModes.append(.auto) }
         if configuration.includeRawDownsample { downsampleModes.append(.disabled) }
         guard !downsampleModes.isEmpty else { return [] }
+
+        // .photoData passes the original photo bytes verbatim to PaletteKit;
+        // no pre-resize step, so the size grid is meaningless. Run one case
+        // per (downsample × quantizer). pixelSide=0 marks "original size".
+        if configuration.sourceKind == .photoData {
+            var cases: [BenchCase] = []
+            for ds in downsampleModes {
+                for q in BenchCase.QuantizerKind.allCases {
+                    cases.append(BenchCase(pixelSide: 0, quantizer: q, downsample: ds))
+                }
+            }
+            return cases
+        }
+
+        var sides: [Int] = [256, 512, 1024, 2048, 4096]
+        if configuration.include8K && configuration.sourceKind == .synthesized {
+            sides.append(8192)
+        }
 
         var cases: [BenchCase] = []
         for side in sides {

@@ -8,6 +8,7 @@ struct BenchView: View {
 
     @State private var photoItem: PhotosPickerItem?
     @State private var photoImage: CGImage?
+    @State private var photoData: Data?
     @State private var photoOriginalSize: CGSize?
     @State private var photoLoadError: String?
     @State private var isLoadingPhoto = false
@@ -46,6 +47,7 @@ struct BenchView: View {
     private func loadPhoto(from item: PhotosPickerItem?) async {
         guard let item else {
             photoImage = nil
+            photoData = nil
             photoOriginalSize = nil
             return
         }
@@ -58,14 +60,17 @@ struct BenchView: View {
                   let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
                 photoLoadError = "Could not decode the selected photo."
                 photoImage = nil
+                photoData = nil
                 photoOriginalSize = nil
                 return
             }
             photoImage = cgImage
+            photoData = data
             photoOriginalSize = CGSize(width: cgImage.width, height: cgImage.height)
         } catch {
             photoLoadError = "Photo load failed: \(error.localizedDescription)"
             photoImage = nil
+            photoData = nil
             photoOriginalSize = nil
         }
     }
@@ -163,11 +168,12 @@ struct BenchView: View {
         Picker("Source", selection: $configuration.sourceKind) {
             Text("Synthesized").tag(BenchRunner.Configuration.SourceKind.synthesized)
             Text("Photo").tag(BenchRunner.Configuration.SourceKind.photo)
+            Text("Photo Data").tag(BenchRunner.Configuration.SourceKind.photoData)
         }
         .pickerStyle(.segmented)
         .font(.footnote)
 
-        if configuration.sourceKind == .photo {
+        if configuration.sourceKind == .photo || configuration.sourceKind == .photoData {
             photoPickerRow
         }
     }
@@ -278,6 +284,7 @@ struct BenchView: View {
                 runner.run(
                     configuration: configuration,
                     photoImage: photoImage,
+                    photoData: photoData,
                     photoOriginalSize: photoOriginalSize
                 )
             } label: {
@@ -294,6 +301,7 @@ struct BenchView: View {
         switch configuration.sourceKind {
         case .synthesized: return true
         case .photo: return photoImage != nil
+        case .photoData: return photoData != nil
         }
     }
 
@@ -322,6 +330,7 @@ struct BenchView: View {
         configuration = BenchRunner.Configuration()
         photoItem = nil
         photoImage = nil
+        photoData = nil
         photoOriginalSize = nil
         photoLoadError = nil
     }

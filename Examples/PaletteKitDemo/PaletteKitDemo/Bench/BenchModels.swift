@@ -7,7 +7,6 @@ struct BenchCase: Identifiable, Hashable {
         case auto
         case cpu
         case metal
-        case kmeans
     }
 
     enum DownsampleKind: String, CaseIterable, Hashable {
@@ -35,7 +34,6 @@ struct BenchCase: Identifiable, Hashable {
         case .auto: q = .auto
         case .cpu: q = .cpu
         case .metal: q = .metal
-        case .kmeans: q = .custom(KMeansQuantizer())
         }
         return ExtractionOptions(
             colorCount: colorCount,

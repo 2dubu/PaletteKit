@@ -26,7 +26,7 @@ private struct PaletteChip: View {
         } label: {
             VStack(spacing: 4) {
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(color.swiftUI)
+                    .fill(color)
                     .frame(height: 56)
                     .overlay {
                         if copied {

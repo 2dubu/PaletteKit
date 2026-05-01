@@ -27,17 +27,17 @@ private struct SwatchCard: View {
             copyToPasteboard(hex, copied: $copied)
         } label: {
             RoundedRectangle(cornerRadius: 12)
-                .fill(swatch?.color.swiftUI ?? Color.gray.opacity(0.15))
+                .fill(backgroundStyle)
                 .frame(height: 90)
                 .overlay(
                     VStack(alignment: .leading) {
                         Text(role.rawValue)
                             .font(.caption.bold())
-                            .foregroundStyle(swatch?.titleTextColor.swiftUI ?? .primary)
+                            .foregroundStyle(titleStyle)
                         Spacer()
                         Text(copied ? "Copied" : (swatch?.color.hex ?? "—"))
                             .font(.caption2.monospaced())
-                            .foregroundStyle(swatch?.bodyTextColor.swiftUI ?? .primary)
+                            .foregroundStyle(bodyStyle)
                             .contentTransition(.opacity)
                     }
                     .padding(8),
@@ -47,12 +47,24 @@ private struct SwatchCard: View {
                     if copied {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.title2)
-                            .foregroundStyle(swatch?.bodyTextColor.swiftUI ?? .primary)
+                            .foregroundStyle(bodyStyle)
                             .shadow(radius: 2)
                     }
                 }
         }
         .buttonStyle(.plain)
         .disabled(swatch == nil)
+    }
+
+    private var backgroundStyle: AnyShapeStyle {
+        swatch.map { AnyShapeStyle($0.color) } ?? AnyShapeStyle(Color.gray.opacity(0.15))
+    }
+
+    private var titleStyle: AnyShapeStyle {
+        swatch.map { AnyShapeStyle($0.titleTextColor) } ?? AnyShapeStyle(Color.primary)
+    }
+
+    private var bodyStyle: AnyShapeStyle {
+        swatch.map { AnyShapeStyle($0.bodyTextColor) } ?? AnyShapeStyle(Color.primary)
     }
 }

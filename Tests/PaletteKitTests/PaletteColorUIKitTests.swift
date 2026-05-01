@@ -38,4 +38,26 @@ struct PaletteColorUIKitInitTests {
         #expect(a == 1)
     }
 }
+
+@Suite("PaletteColor.cgColor")
+struct PaletteColorCGColorTests {
+    @Test("cgColor reports sRGB color space")
+    func cgColorSpace() {
+        let cg = PaletteColor(r: 100, g: 50, b: 200).cgColor
+        #expect(cg.colorSpace?.name == CGColorSpace.sRGB)
+    }
+
+    @Test("cgColor channels match input PaletteColor")
+    func cgColorChannels() {
+        let cg = PaletteColor(r: 200, g: 100, b: 50).cgColor
+        let comps = cg.components ?? []
+        #expect(comps.count >= 3)
+        #expect(abs(comps[0] - 200.0 / 255.0) < 1e-5)
+        #expect(abs(comps[1] - 100.0 / 255.0) < 1e-5)
+        #expect(abs(comps[2] - 50.0 / 255.0) < 1e-5)
+        if comps.count == 4 {
+            #expect(comps[3] == 1)
+        }
+    }
+}
 #endif

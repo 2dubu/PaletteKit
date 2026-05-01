@@ -6,11 +6,10 @@
 [![Platforms](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2F2dubu%2FPaletteKit%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/2dubu/PaletteKit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-High-performance iOS-native color palette extraction. Swift Package,
-SwiftUI- and UIKit-friendly. Inspired by [color-thief](https://github.com/lokesh/color-thief)
-but reimagined for Apple platforms: Metal compute histogram, OKLCH
-perceptual quantization, Display P3 wide-gamut support, Semantic
-Swatches, async-only Sendable API.
+[color-thief](https://github.com/lokesh/color-thief) reimagined for Apple —
+a modern, iOS-native color palette extractor. Swift Package, SwiftUI- and
+UIKit-friendly: OKLCH perceptual quantization, Display P3 wide-gamut support,
+Semantic Swatches, async-only Sendable API.
 
 ```swift
 import PaletteKit
@@ -44,9 +43,11 @@ swatches.vibrant?.color.hex
   spaced to the human eye, not evenly spaced in sRGB.
 - **Display P3 native.** iPhone photos keep their chroma instead of
   being clipped to sRGB.
-- **Two backends, same algorithm.** `MmcqQuantizer` (CPU, Accelerate)
-  and `MetalMmcqQuantizer` (GPU compute shader). `.auto` routes based
-  on image size. Bring your own via `Quantizer` protocol.
+- **CPU by default, Metal opt-in.** `MmcqQuantizer` (CPU, Accelerate)
+  is the default and what `.auto` always selects. `MetalMmcqQuantizer`
+  (GPU compute shader) is opt-in for raw mode on ≥4MP inputs, where
+  on-device measurements show a ~5-10% quantize-stage speedup. Bring
+  your own via the `Quantizer` protocol.
 - **Automatic pre-downsampling.** `CGImageSourceCreateThumbnailAtIndex`
   keeps memory bounded for 12-megapixel photos.
 - **Semantic swatches.** Six OKLCH roles (vibrant, muted, darkVibrant,
@@ -81,6 +82,12 @@ extractor.swatches(from:)         // SwatchMap
 `downsample`, `quantizer`, …) are documented in the
 [DocC reference](https://swiftpackageindex.com/2dubu/PaletteKit/documentation/palettekit).
 
+**Tip:** Prefer `.data(...)` for HEIC/JPEG bytes you already hold in
+memory or fetched over the network. PaletteKit's data path skips
+file-system overhead — measured ~17% faster than `.url(...)` on
+iPhone 15 Pro for a 4MP HEIC input. Use `.url(...)` when the file
+lives on disk so the decoder can mmap it directly.
+
 ## Color space handling
 
 PaletteKit detects the source color space from `CGImage.colorSpace` and
@@ -93,25 +100,41 @@ let palette = try await extractor.palette(from: .url(hdrPhotoURL))
 palette.colorSpaceUsed  // .displayP3 on an iPhone HEIC, .sRGB elsewhere
 ```
 
-## CPU vs Metal
+## CPU vs Metal: choose by goal, not by image size
 
-`.auto` picks Metal once the sampled pixel count reaches **500,000** and
-CPU below that. The threshold is provisional — it will be retuned after
-the first round of real-device measurements feeds back into the
-benchmark suite.
+Default (`.auto`) **always uses CPU MMCQ**. On-device measurements
+(iPhone 15 Pro, 4096² photos) showed CPU and Metal within ≤4ms after
+auto-downsample, so size-based routing added complexity without
+measurable wins at default settings.
+
+Metal becomes useful in a narrow band: **raw mode + ≥4MP input**, where
+it shaves ~5-10% off quantize. Use `.metal` only when you've also
+disabled downsampling.
+
+| You want… | `quantizer` | `downsample` | Notes |
+| --- | --- | --- | --- |
+| **A palette, no fuss** | `.auto` | default | The default. CPU + auto-downsample. |
+| **Maximum color accuracy** | `.cpu` | `.disabled` | Process every pixel. Slowest, most accurate. |
+| **Accuracy + speed on large inputs** | `.metal` | `.disabled` | ≥4MP only. ~5-10% quantize win vs CPU raw. |
+| **Ensure work runs on GPU** | `.metal` | default | Falls back to CPU if Metal is unavailable. |
 
 ```swift
-// Force CPU
-try await extractor.palette(from: source,
-    options: ExtractionOptions(quantizer: .cpu))
+// Default — CPU with auto-downsample to ~1M pixels:
+try await extractor.palette(from: source)
 
-// Force Metal (falls back to CPU if Metal is unavailable)
+// Maximum accuracy — every pixel, CPU MMCQ:
 try await extractor.palette(from: source,
-    options: ExtractionOptions(quantizer: .metal))
+    options: ExtractionOptions(downsample: .disabled, quantizer: .cpu))
+
+// Large-input accuracy + Metal (≥4MP raw):
+try await extractor.palette(from: source,
+    options: ExtractionOptions(downsample: .disabled, quantizer: .metal))
 ```
 
 Metal warms up the first time `MetalContext` is touched (shader compile +
-pipeline build). Subsequent calls are steady-state.
+pipeline build). Subsequent calls are steady-state. In `DEBUG` builds,
+PaletteKit logs a hint to the console if you select `.metal` on input
+that's too small for the speedup to land.
 
 ## Instrumentation
 
@@ -172,6 +195,11 @@ Tap **Run**, watch the chart fill in, then **Export** as Raw CSV or
 Summary CSV via the share sheet. Save exports under `benchmark/`
 (gitignored) for local-only analysis.
 
+This harness is primarily an internal development discipline tool
+(every CPU/GPU change has to clear a measurement gate before it
+lands). It ships in the demo app for transparency, but most apps
+don't need to run it.
+
 ## Requirements
 
 - iOS 17+
@@ -180,12 +208,16 @@ Summary CSV via the share sheet. Save exports under `benchmark/`
 
 ## Roadmap
 
-- **v1.x (minor)** — progressive extraction, k-means quantizer,
-  `PaletteKitCard` (palette-driven share-card graphics with three-tier
-  shader strategy), macOS / watchOS / tvOS / visionOS expansion.
+- **v1.2** (this release) — color-thief alignment: doc batch, demo
+  app option-tuning sheet, color-thief parity verification.
+- **v1.3** — SwiftUI integration: `PaletteColor: ShapeStyle`, view
+  modifier like `.paletteBackground(palette:)`.
+- **v1.4** — `PaletteKitCard` (palette-driven share-card graphics).
+  Tier strategy under exploration: LinearGradient → MeshGradient →
+  SwiftUI Shader → MetalKit `MTKView` multi-pass.
 - **v2.0** — live video / camera `observe()`; `PaletteKitInsights`
-  (FoundationModels captions, color naming, custom instructions on
-  iOS 26+).
+  as a separate product (FoundationModels captions, color naming,
+  custom instructions on iOS 26+).
 
 Per-release notes live on [GitHub Releases](https://github.com/2dubu/PaletteKit/releases).
 

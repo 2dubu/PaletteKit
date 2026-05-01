@@ -57,7 +57,7 @@ enum MmcqEngine {
         var queue = PQueue<VBox>(compare: { $0.count(histogram: histogram) < $1.count(histogram: histogram) })
         queue.push(initialBox)
 
-        let phase1Target = Int((Double(maxColors) * fractByPopulation).rounded(.down))
+        let phase1Target = Int((Double(maxColors) * fractByPopulation).rounded(.up))
         try iterate(queue: &queue, target: phase1Target, histogram: histogram)
 
         var queue2 = PQueue<VBox>(compare: { a, b in

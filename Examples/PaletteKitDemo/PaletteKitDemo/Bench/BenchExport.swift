@@ -25,7 +25,7 @@ enum BenchExport {
             lines.append("# note,\(escape(runNote))")
         }
         lines.append(
-            "case_id,size_px,quantizer,downsample,run_index,is_warmup,total_ms,decode_ms,sample_ms,quantize_ms,engine,palette_count,error"
+            "scenario,case_id,size_px,quantizer,downsample,run_index,is_warmup,total_ms,decode_ms,sample_ms,quantize_ms,engine,palette_count,error"
         )
         for sample in samples {
             let parts = sample.caseId.split(separator: "-")
@@ -33,6 +33,7 @@ enum BenchExport {
             let quantizer = parts.count > 1 ? String(parts[1]) : ""
             let downsample = parts.count > 2 ? String(parts[2]) : ""
             let row: [String] = [
+                escape(sample.scenario ?? ""),
                 sample.caseId,
                 size,
                 quantizer,
@@ -70,10 +71,11 @@ enum BenchExport {
             lines.append("# note,\(escape(runNote))")
         }
         lines.append(
-            "size_px,quantizer,downsample,runs,total_p50_ms,total_p95_ms,total_min_ms,total_max_ms,quantize_p50_ms,quantize_p95_ms,decode_mean_ms,sample_mean_ms,quantize_mean_ms,engine,errors"
+            "scenario,size_px,quantizer,downsample,runs,total_p50_ms,total_p95_ms,total_min_ms,total_max_ms,quantize_p50_ms,quantize_p95_ms,decode_mean_ms,sample_mean_ms,quantize_mean_ms,engine,errors"
         )
         for s in summaries {
             let row: [String] = [
+                escape(s.scenario ?? ""),
                 String(s.benchCase.pixelSide),
                 s.benchCase.quantizer.rawValue,
                 s.benchCase.downsample.rawValue,

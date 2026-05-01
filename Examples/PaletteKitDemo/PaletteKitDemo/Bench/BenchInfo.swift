@@ -60,17 +60,23 @@ exposes thermal throttling on long sessions.
     static let source = BenchInfo(
         title: "Source image",
         description: """
-What gets fed to the quantizer at each grid size.
+What gets fed to the quantizer.
 
 Synthesized — a deterministic image (gradient + 5 colored blobs + \
-per-pixel noise) generated in memory. Same content on every run, on \
-every device. No file decode is exercised.
+per-pixel noise) generated in memory at each grid size. Same content \
+on every run. No file decode is exercised.
 
-Photo — a photo you pick from your library. PaletteKit center-crops \
-it to a square and rescales (high-quality interpolation) to each grid \
-size. Lets you measure the quantizer on real-world color distributions.
+Photo — a photo you pick from your library, decoded externally and \
+center-cropped & resized to each grid size before being passed to \
+PaletteKit as a CGImage. Measures the quantizer on real color \
+distributions; bypasses the library's ImageIO decode path.
+
+Photo Data — same picked photo, but the raw HEIC/JPEG bytes are \
+passed straight to PaletteKit. The library's ImageIO thumbnail \
+fast-path runs on the original file. Compare against Photo to see \
+how much that fast-path saves.
 """,
-        guidance: "Synthesized = reproducible cross-device comparisons. Photo = realistic content sanity check; numbers will not be directly comparable to synthesized runs."
+        guidance: "Synthesized = reproducible cross-device comparisons. Photo = realistic quantizer cost on a known size. Photo Data = realistic end-to-end latency (decode + downsample + quantize) for a typical user call."
     )
 
     static let runNote = BenchInfo(

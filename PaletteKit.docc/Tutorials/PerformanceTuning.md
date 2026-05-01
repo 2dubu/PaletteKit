@@ -30,18 +30,25 @@ state after ``MetalMmcqQuantizer/prepare()`` has run once per process.
 
 ## Auto-selection
 
-``QuantizerSelection/auto`` picks Metal once the sampled pixel count
-reaches **500,000**. Below that threshold CPU is both simpler and faster
-because there is no GPU round-trip. The threshold is provisional; we
-tighten it as we collect more real-device numbers.
+``QuantizerSelection/auto`` **always selects CPU MMCQ.** On-device
+measurements (iPhone 15 Pro / A17 Pro, 4096² photos) showed CPU and
+Metal within ≤4ms after auto-downsample, so size-based routing added
+complexity without measurable wins at default settings.
 
-Override explicitly when you know what you want:
+Metal becomes useful in a narrow band — **raw mode + ≥4MP input** —
+where it shaves ~5-10% off quantize. See <doc:Options> for the full
+"Choosing accuracy vs speed" decision tree, or jump straight to the
+overrides:
 
 ```swift
-ExtractionOptions(quantizer: .cpu)    // always CPU
-ExtractionOptions(quantizer: .metal)  // force Metal (degrades to CPU if
-                                      // Metal is unavailable)
+ExtractionOptions(quantizer: .cpu)    // explicit CPU
+ExtractionOptions(quantizer: .metal)  // explicit Metal (degrades to CPU
+                                      // if Metal is unavailable)
 ```
+
+In `DEBUG` builds, PaletteKit emits a console hint when `.metal` is
+selected on input that's too small to benefit (sampled pixel count
+< 1M).
 
 ## Instruments
 

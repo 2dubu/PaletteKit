@@ -43,6 +43,29 @@ struct MmcqQuantizerTests {
         #expect(result.isEmpty)
     }
 
+    @Test("Phase 1 target rounds up to match color-thief termination")
+    func phase1CeilingRounding() {
+        // For maxColors values where (maxColors * 0.75) is non-integer,
+        // Phase 1 should terminate at ceil(maxColors * 0.75) rather than floor.
+        // This matches color-thief v3, which compares an integer count
+        // against a fractional target with `>=` (effectively a ceiling).
+        let cases: [(maxColors: Int, expectedPhase1Target: Int)] = [
+            (4, 3),    // 3.0 → 3
+            (5, 4),    // 3.75 → 4
+            (7, 6),    // 5.25 → 6
+            (8, 6),    // 6.0 → 6
+            (10, 8),   // 7.5 → 8 (default colorCount)
+            (11, 9),   // 8.25 → 9
+            (14, 11),  // 10.5 → 11
+            (16, 12),  // 12.0 → 12
+            (20, 15),  // 15.0 → 15
+        ]
+        for (maxColors, expected) in cases {
+            let target = Int((Double(maxColors) * MmcqEngine.fractByPopulation).rounded(.up))
+            #expect(target == expected, "maxColors=\(maxColors): expected Phase 1 target \(expected), got \(target)")
+        }
+    }
+
     @Test("respects cancellation")
     func cancellation() async throws {
         let pixels = (0..<50_000).map { _ in

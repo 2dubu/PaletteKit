@@ -51,17 +51,51 @@ Display P3 input is auto-detected. When `colorSpace == .oklch` the
 resulting palette stays in the source color space — the OKLCH conversion
 is used only inside the quantization step for perceptual uniformity.
 
-### Choosing the backend
+### Choosing an `ImageSource`
+
+`ImageSource` controls where pixels come from. The right case depends on
+where the bytes already live:
+
+- `.data(_)` — bytes you already hold in memory or fetched over the
+  network. **Most-optimized path** for HEIC/JPEG: PaletteKit constructs
+  the `CGImageSource` directly from `Data`, skipping any file-system
+  hop. Measured ~17% faster than `.url(_)` on iPhone 15 Pro for a 4MP
+  HEIC input.
+- `.url(_)` — file on disk. The decoder can mmap the file directly,
+  which is the right call when the bytes are already on disk.
+- `.cgImage(_)` — you've already decoded a `CGImage` somewhere else
+  (e.g. AppKit/UIKit gave you one). PaletteKit re-uses it as-is.
+
+If you're holding `Data` and have a choice, prefer `.data(_)`.
+
+### Choosing accuracy vs speed
+
+There are four common goals; pick the row that matches yours.
+
+| You want… | `quantizer` | `downsample` | Notes |
+| --- | --- | --- | --- |
+| **A palette, no fuss** | `.auto` | default | The default. Always CPU. |
+| **Maximum color accuracy** | `.cpu` | `.disabled` | Process every pixel. Slowest, most accurate. |
+| **Accuracy + speed on large inputs** | `.metal` | `.disabled` | ≥4MP only. ~5-10% quantize win vs CPU raw. |
+| **Ensure work runs on GPU** | `.metal` | default | Falls back to CPU if Metal is unavailable. |
 
 ```swift
-ExtractionOptions(quantizer: .auto)
-ExtractionOptions(quantizer: .metal)
-ExtractionOptions(quantizer: .cpu)
-ExtractionOptions(quantizer: .custom(KMeansQuantizer()))
+// Default — CPU MMCQ with auto-downsample to ~1M pixels:
+ExtractionOptions()                                    // == .auto, default downsample
+
+// Maximum accuracy — every pixel, CPU MMCQ:
+ExtractionOptions(downsample: .disabled, quantizer: .cpu)
+
+// Large-input accuracy + Metal (≥4MP raw):
+ExtractionOptions(downsample: .disabled, quantizer: .metal)
+
+// Custom quantizer:
+ExtractionOptions(quantizer: .custom(MyQuantizer()))
 ```
 
-`.auto` dispatches to Metal for sampled pixel counts at or above 500,000
-and CPU below that. See <doc:PerformanceTuning>.
+`.auto` always picks CPU regardless of image size — on-device
+measurements showed Metal didn't beat CPU at default settings. See
+<doc:PerformanceTuning> for the underlying numbers.
 
 ### Timings
 

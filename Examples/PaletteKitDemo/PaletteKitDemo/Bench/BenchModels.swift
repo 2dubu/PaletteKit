@@ -24,7 +24,8 @@ struct BenchCase: Identifiable, Hashable {
 
     var label: String {
         let dsTag = downsample == .auto ? "auto" : "raw"
-        return "\(pixelSide)² · \(quantizer.rawValue.uppercased()) · \(dsTag)"
+        let sizeStr = pixelSide == 0 ? "orig" : "\(pixelSide)²"
+        return "\(sizeStr) · \(quantizer.rawValue.uppercased()) · \(dsTag)"
     }
 
     func paletteOptions(colorCount: Int = 10) -> ExtractionOptions {
@@ -47,7 +48,8 @@ struct BenchCase: Identifiable, Hashable {
     /// rows. Goal: ~16 characters, monospace-friendly.
     var compactLabel: String {
         let dsTag = downsample == .auto ? "ds" : "raw"
-        return "\(pixelSide)² · \(quantizer.rawValue) · \(dsTag)"
+        let sizeStr = pixelSide == 0 ? "orig" : "\(pixelSide)²"
+        return "\(sizeStr) · \(quantizer.rawValue) · \(dsTag)"
     }
 }
 
@@ -55,6 +57,8 @@ struct BenchCase: Identifiable, Hashable {
 /// excluded from summary statistics.
 struct BenchSample: Identifiable, Hashable {
     let id = UUID()
+    /// Suite scenario id (nil for single-config runs).
+    let scenario: String?
     let caseId: String
     let runIndex: Int
     let isWarmup: Bool
@@ -70,6 +74,7 @@ struct BenchSample: Identifiable, Hashable {
 /// Aggregated stats for one BenchCase (post-warmup runs only).
 struct BenchSummary: Identifiable, Hashable {
     let id: String
+    let scenario: String?
     let benchCase: BenchCase
     let runCount: Int
     let totalP50ms: Double

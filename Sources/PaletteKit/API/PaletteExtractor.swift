@@ -186,23 +186,30 @@ public struct PaletteExtractor: Sendable {
     private func resolveQuantizer(options: ExtractionOptions, pixelCount: Int) -> any Quantizer {
         switch options.quantizer {
         case .auto:
-            return pixelCount >= PaletteExtractor.metalAutoThreshold
-                ? metalOrCPUFallback()
-                : MmcqQuantizer()
+            return MmcqQuantizer()
         case .cpu:
             return MmcqQuantizer()
         case .metal:
-            return metalOrCPUFallback()
+            return metalOrCPUFallback(pixelCount: pixelCount)
         case .custom(let quantizer):
             return quantizer
         }
     }
 
-    /// Jointly chosen threshold. Subject to retuning once v0.4+ benchmarks land.
-    static let metalAutoThreshold = 500_000
-
-    private func metalOrCPUFallback() -> any Quantizer {
+    private func metalOrCPUFallback(pixelCount: Int) -> any Quantizer {
         #if canImport(Metal)
+        #if DEBUG
+        if pixelCount < 1_000_000 {
+            PaletteKitLog.extraction.notice(
+                """
+                [PaletteKit] quantizer: .metal selected with sampled pixel count = \(pixelCount). \
+                Metal yields a 5-10% quantize speedup only above ~1M sampled pixels. \
+                If you want maximum color accuracy on large inputs, also set Downsample.disabled. \
+                Otherwise .auto (CPU) is the right default.
+                """
+            )
+        }
+        #endif
         return MetalMmcqQuantizer()
         #else
         PaletteKitLog.extraction.notice("Metal requested but unavailable on this platform — using CPU.")

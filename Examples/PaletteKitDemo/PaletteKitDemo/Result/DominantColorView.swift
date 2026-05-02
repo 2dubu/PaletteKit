@@ -14,7 +14,7 @@ struct DominantColorView: View {
             } label: {
                 HStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(color.swiftUI)
+                        .fill(color)
                         .frame(height: 80)
                         .overlay {
                             if copied {

@@ -11,25 +11,37 @@ a modern, iOS-native color palette extractor. Swift Package, SwiftUI- and
 UIKit-friendly: OKLCH perceptual quantization, Display P3 wide-gamut support,
 Semantic Swatches, async-only Sendable API.
 
+## Quick start
+
+### SwiftUI
+
 ```swift
 import PaletteKit
+import SwiftUI
 
 let extractor = PaletteExtractor()
-
-// Dominant color
-let color = try await extractor.dominantColor(from: .cgImage(image))
-color?.hex        // "#e84393"
-color?.isDark     // false
-
-// Palette
-let palette = try await extractor.palette(from: .url(imageURL))
-for entry in palette {
-    print(entry.hex, entry.proportion)
-}
-
-// Semantic swatches
+let palette = try await extractor.palette(from: .data(imageData))
 let swatches = try await extractor.swatches(from: .data(imageData))
-swatches.vibrant?.color.hex
+
+Rectangle()
+    .fill(palette.dominant ?? .black)
+
+Text("Hello")
+    .foregroundStyle(swatches.vibrant?.titleTextColor ?? .black)
+```
+
+### UIKit
+
+```swift
+import PaletteKit
+import UIKit
+
+let extractor = PaletteExtractor()
+let palette = try await extractor.palette(from: .data(imageData))
+let swatches = try await extractor.swatches(from: .data(imageData))
+
+view.backgroundColor = UIColor(palette.dominant ?? .black)
+label.textColor = UIColor(swatches.vibrant?.titleTextColor ?? .black)
 ```
 
 ## Features
@@ -37,8 +49,9 @@ swatches.vibrant?.color.hex
 - **Async, Sendable, Swift 6 strict concurrency.** Every entry point is
   `async throws`. `PaletteExtractor` is a value type — one per call site
   or share freely across actors.
-- **Rich `PaletteColor`.** hex, HSL, OKLCH, WCAG contrast, text-color
-  recommendation, `isDark`/`isLight`, population, proportion.
+- **Rich `PaletteColor`.** hex, HSL, OKLCH, contrast, `isDark`/`isLight`, and
+  ShapeStyle conformance so it slots into any SwiftUI fill / foreground /
+  background modifier directly.
 - **OKLCH perceptual quantization by default.** Palettes feel evenly
   spaced to the human eye, not evenly spaced in sRGB.
 - **Display P3 native.** iPhone photos keep their chroma instead of
@@ -63,11 +76,17 @@ swatches.vibrant?.color.hex
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/2dubu/PaletteKit", from: "1.0.0"),
+    .package(url: "https://github.com/2dubu/PaletteKit", from: "1.3.0"),
 ]
 ```
 
 Minimum iOS 17 · Swift 6.0 · Xcode 16+.
+
+## What's new in 1.3
+
+- `PaletteColor` conforms to `ShapeStyle` (iOS 17+) — pass it directly to `.fill`, `.foregroundStyle`, `.background`, `.tint`, `.border`, etc. without an adapter call.
+- `UIColor(_ paletteColor:)` convenience initializer for UIKit. `paletteColor.cgColor` for direct Core Graphics use.
+- **Breaking:** The `swiftUI` and `uiColor` adapter properties on `PaletteColor` are removed. Migrate by passing `PaletteColor` directly in SwiftUI, and using `UIColor(paletteColor)` or `paletteColor.cgColor` in UIKit.
 
 ## API
 
@@ -208,16 +227,9 @@ don't need to run it.
 
 ## Roadmap
 
-- **v1.2** (this release) — color-thief alignment: doc batch, demo
-  app option-tuning sheet, color-thief parity verification.
-- **v1.3** — SwiftUI integration: `PaletteColor: ShapeStyle`, view
-  modifier like `.paletteBackground(palette:)`.
+- **v1.3** ✅ shipped — SwiftUI ShapeStyle conformance + idiomatic UIKit integration.
 - **v1.4** — `PaletteKitCard` (palette-driven share-card graphics).
-  Tier strategy under exploration: LinearGradient → MeshGradient →
-  SwiftUI Shader → MetalKit `MTKView` multi-pass.
-- **v2.0** — live video / camera `observe()`; `PaletteKitInsights`
-  as a separate product (FoundationModels captions, color naming,
-  custom instructions on iOS 26+).
+- **v2.0** — `observe()` (live video / camera) and `PaletteKitInsights` (FoundationModels captions, color naming, custom instructions on iOS 26+).
 
 Per-release notes live on [GitHub Releases](https://github.com/2dubu/PaletteKit/releases).
 

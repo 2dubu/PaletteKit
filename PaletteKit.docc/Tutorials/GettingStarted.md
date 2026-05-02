@@ -47,13 +47,58 @@ for entry in palette {
 ```swift
 let swatches = try await extractor.swatches(from: .data(imageData))
 if let vibrant = swatches.vibrant {
-    view.backgroundColor = vibrant.color.uiColor
-    label.textColor = vibrant.titleTextColor.uiColor
+    view.backgroundColor = UIColor(vibrant.color)
+    label.textColor = UIColor(vibrant.titleTextColor)
 }
 ```
 
 Each `Swatch` also exposes `titleTextColor` and `bodyTextColor` so you can
 render accessible text directly on top of the swatch.
+
+## Using the result
+
+`PaletteColor` and ``Swatch`` values are framework-neutral. Pick the path that matches your UI layer.
+
+### SwiftUI
+
+`PaletteColor` conforms to `ShapeStyle` (iOS 17+), so it slots directly into `.fill`, `.foregroundStyle`, `.background`, `.tint`, and `.border`:
+
+```swift
+let palette = try await extractor.palette(from: .data(imageData))
+let swatches = try await extractor.swatches(from: .data(imageData))
+
+VStack {
+    Rectangle()
+        .fill(palette.dominant ?? .black)
+        .frame(height: 80)
+
+    if let vibrant = swatches.vibrant {
+        Text("Vibrant")
+            .foregroundStyle(vibrant.titleTextColor)
+            .padding()
+            .background(vibrant.color)
+    }
+}
+```
+
+Internally `resolve(in:)` produces a `Color.Resolved` tagged sRGB.
+
+### UIKit
+
+For UIKit, use the `UIColor(_:)` convenience initializer:
+
+```swift
+let palette = try await extractor.palette(from: .data(imageData))
+let swatches = try await extractor.swatches(from: .data(imageData))
+
+if let vibrant = swatches.vibrant {
+    view.backgroundColor = UIColor(vibrant.color)
+    label.textColor = UIColor(vibrant.titleTextColor)
+}
+
+// For Core Graphics drawing (CALayer, CGContext) — direct, no UIColor hop:
+layer.backgroundColor = palette.dominant?.cgColor
+```
 
 ## Next steps
 

@@ -97,6 +97,42 @@ ExtractionOptions(quantizer: .custom(MyQuantizer()))
 measurements showed Metal didn't beat CPU at default settings. See
 <doc:PerformanceTuning> for the underlying numbers.
 
+### SwiftUI integration
+
+`PaletteColor` conforms to `ShapeStyle` (iOS 17+), so it can be used directly
+with any `ShapeStyle`-accepting modifier without an adapter call:
+
+```swift
+let palette = try await extractor.palette(from: .data(imageData))
+let swatches = try await extractor.swatches(from: .data(imageData))
+
+Rectangle()
+    .fill(palette.dominant ?? .black)
+
+if let vibrant = swatches.vibrant {
+    Text("Hello")
+        .foregroundStyle(vibrant.titleTextColor)
+}
+```
+
+Internally `resolve(in:)` produces a `Color.Resolved` tagged sRGB. `Color.Resolved`
+is Apple's concrete RGBA value type; SwiftUI converts it into the rendering
+pipeline without a context-dependent lookup.
+
+### UIKit integration
+
+For UIKit, use the `UIColor(_:)` convenience initializer:
+
+```swift
+let palette = try await extractor.palette(from: .data(imageData))
+
+let label = UILabel()
+label.textColor = UIColor(palette.dominant ?? .black)
+
+// For Core Graphics drawing (CALayer, CGContext) — direct, no UIColor hop:
+layer.backgroundColor = palette.dominant?.cgColor
+```
+
 ### Timings
 
 ```swift

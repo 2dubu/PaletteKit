@@ -7,9 +7,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [color-thief](https://github.com/lokesh/color-thief) reimagined for Apple —
-a modern, iOS-native color palette extractor. Swift Package, SwiftUI- and
-UIKit-friendly: OKLCH perceptual quantization, Display P3 wide-gamut support,
-Semantic Swatches, async-only Sendable API.
+a modern, iOS-native palette extractor with a built-in palette-driven
+graphic primitive. Swift Package, SwiftUI- and UIKit-friendly: OKLCH
+perceptual quantization, Display P3 wide-gamut support, Semantic Swatches,
+async-only Sendable API.
 
 ## Quick start
 
@@ -44,11 +45,38 @@ view.backgroundColor = UIColor(palette.dominant ?? .black)
 label.textColor = UIColor(swatches.vibrant?.titleTextColor ?? .black)
 ```
 
+### Generate a graphic
+
+```swift
+import PaletteKit
+import SwiftUI
+
+PaletteGraphic(palette: palette, swatches: swatches, configuration: .init(
+    direction: .linear,
+    colorCount: .three,
+    swatchStrategy: .vibrant,
+    grain: .standard
+))
+.frame(width: 320, height: 320)
+.clipShape(RoundedRectangle(cornerRadius: 24))
+```
+
+UIKit gets the same renderer through `PaletteGraphicView` (`UIView`) — no
+`UIHostingController` wrapper. For a static `UIImage`, call
+`.makeImage(size:scale:)` on `PaletteGraphic` or `.snapshotImage(scale:)`
+on `PaletteGraphicView`.
+
 ## Features
 
 - **Async, Sendable, Swift 6 strict concurrency.** Every entry point is
   `async throws`. `PaletteExtractor` is a value type — one per call site
   or share freely across actors.
+- **Palette-driven graphic primitive.** `PaletteGraphic` (SwiftUI) and
+  `PaletteGraphicView` (UIKit) render gradient + grain artwork from any
+  extracted palette. Pixel-equivalent across platforms via a shared Core
+  Image / Core Graphics renderer; `NSCache`-memoized so repeated SwiftUI
+  body invalidations return instantly. Configurable along four orthogonal
+  axes (direction, color count, swatch strategy, grain).
 - **Rich `PaletteColor`.** hex, HSL, OKLCH, contrast, `isDark`/`isLight`, and
   ShapeStyle conformance so it slots into any SwiftUI fill / foreground /
   background modifier directly.
@@ -188,7 +216,7 @@ template to see decode / sample / quantize intervals.
 Full DocC catalog ships with the package:
 
 - `PaletteKit` reference
-- `GettingStarted.md` · `Options.md` · `PerformanceTuning.md`
+- `GettingStarted.md` · `Options.md` · `PerformanceTuning.md` · `Card.md`
 - `AlgorithmDeepDive.md` — MMCQ, OKLCH, Swatches internals
 
 Generate locally with `xcodebuild docbuild` or browse on
@@ -197,7 +225,10 @@ Generate locally with `xcodebuild docbuild` or browse on
 ## Example
 
 `Examples/PaletteKitDemo` — a minimal SwiftUI app showing a
-photo-picker → palette grid → swatches → timings flow.
+photo-picker → palette grid → swatches → timings flow. Tap **Generate
+Graphic** on the result screen to open the **Graphic Lab** — interactive
+playground for every `PaletteGraphic` configuration axis on your actual
+extracted palette.
 
 ```bash
 make setup       # one-time: installs xcodegen via Homebrew if missing

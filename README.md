@@ -51,14 +51,16 @@ label.textColor = UIColor(swatches.vibrant?.titleTextColor ?? .black)
 import PaletteKit
 import SwiftUI
 
-PaletteGraphic(palette: palette, swatches: swatches, configuration: .init(
+let configuration = PaletteGraphic.Configuration(
     direction: .linear,
     colorCount: .three,
     swatchStrategy: .vibrant,
     grain: .standard
-))
-.frame(width: 320, height: 320)
-.clipShape(RoundedRectangle(cornerRadius: 24))
+)
+
+PaletteGraphic(palette: palette, swatches: swatches, configuration: configuration)
+    .frame(width: 320, height: 320)
+    .clipShape(RoundedRectangle(cornerRadius: 24))
 ```
 
 UIKit gets the same renderer through `PaletteGraphicView` (`UIView`) — no
@@ -110,26 +112,10 @@ dependencies: [
 
 Minimum iOS 17 · Swift 6.0 · Xcode 16+.
 
-## What's new in 1.4
-
-- New `PaletteGraphic` (SwiftUI) and `PaletteGraphicView` (UIKit) primitives — render a palette-driven gradient + grain graphic from any extracted `Palette`. Both views share the same Core Image / Core Graphics pipeline for pixel-equivalent output.
-- New `Configuration` struct exposes four orthogonal axes: `direction` (linear / radial), `colorCount` (2…5 with cumulative bisection), `swatchStrategy` (vibrant / contrast / muted), `grain` (none / subtle / standard / heavy).
-- New public `CardPalette` + `SwatchStrategy` helpers resolve `center` / `edge` / `background` / `accent` colors from a `Palette` + `SwatchMap` so consumers can compose palette-themed UI without re-implementing the lookup logic.
-- Internal `NSCache` memoization in the renderer — repeated SwiftUI body invalidations with the same inputs return instantly.
-- Demo app gains a "Generate Graphic" entry that opens an interactive Graphic Lab for exploring every configuration axis on a real extracted palette.
-
-See <doc:Card> for full usage.
-
-## What's new in 1.3
-
-- `PaletteColor` conforms to `ShapeStyle` (iOS 17+) — pass it directly to `.fill`, `.foregroundStyle`, `.background`, `.tint`, `.border`, etc. without an adapter call.
-- `UIColor(_ paletteColor:)` convenience initializer for UIKit. `paletteColor.cgColor` for direct Core Graphics use.
-- **Breaking:** The `swiftUI` and `uiColor` adapter properties on `PaletteColor` are removed. Migrate by passing `PaletteColor` directly in SwiftUI, and using `UIColor(paletteColor)` or `paletteColor.cgColor` in UIKit.
-
 ## API
 
 ```swift
-extractor.dominantColor(from:)   // PaletteColor?
+extractor.dominantColor(from:)    // PaletteColor?
 extractor.palette(from:)          // Palette
 extractor.swatches(from:)         // SwatchMap
 ```

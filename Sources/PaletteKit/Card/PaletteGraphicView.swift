@@ -67,8 +67,13 @@ public final class PaletteGraphicView: UIView {
 
     /// Render synchronously to a `UIImage` at the current bounds. Useful
     /// when the caller wants a snapshot independent of the view's layer.
+    ///
+    /// `scale` defaults to the view's `traitCollection.displayScale`. When
+    /// the view isn't yet attached to a window the trait collection's
+    /// scale can be `0`, so the result is clamped to a minimum of `1`
+    /// to avoid producing a 1×1 placeholder image.
     public func snapshotImage(scale: CGFloat? = nil) -> UIImage? {
-        let resolvedScale = scale ?? traitCollection.displayScale
+        let resolvedScale = max(scale ?? traitCollection.displayScale, 1)
         let pixelSize = CGSize(
             width: max(bounds.width * resolvedScale, 1),
             height: max(bounds.height * resolvedScale, 1)

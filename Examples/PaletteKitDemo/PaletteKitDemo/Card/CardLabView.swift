@@ -170,16 +170,14 @@ struct CardLabView: View {
         let graphic = PaletteGraphic(palette: palette, swatches: swatches, configuration: configuration)
             .aspectRatio(1.0, contentMode: .fit)
 
-        let clipped: AnyView = {
+        Group {
             switch shape {
-            case .circle:    return AnyView(graphic.clipShape(Circle()))
-            case .rectangle: return AnyView(graphic.clipShape(Rectangle()))
+            case .circle:    graphic.clipShape(Circle())
+            case .rectangle: graphic.clipShape(Rectangle())
             }
-        }()
-
-        clipped
-            .padding(.horizontal, 36)
-            .shadow(color: Color(cp.edge).opacity(0.18), radius: 18, x: 0, y: 12)
+        }
+        .padding(.horizontal, 36)
+        .shadow(color: Color(cp.edge).opacity(0.18), radius: 18, x: 0, y: 12)
     }
 
     private func swatchChipBar(cp: CardPalette) -> some View {
@@ -226,13 +224,12 @@ struct CardLabView: View {
         let size = CGSize(width: 1080, height: 1350)
         let baseGraphic = PaletteGraphic(palette: palette, swatches: swatches, configuration: configuration)
             .frame(width: size.width, height: size.height)
-        let clipped: AnyView = {
-            switch shape {
-            case .circle:    return AnyView(baseGraphic.clipShape(Circle()))
-            case .rectangle: return AnyView(baseGraphic.clipShape(Rectangle()))
-            }
-        }()
-        shareImage = CardExport.snapshot(clipped, size: size)
+        switch shape {
+        case .circle:
+            shareImage = CardExport.snapshot(baseGraphic.clipShape(Circle()), size: size)
+        case .rectangle:
+            shareImage = CardExport.snapshot(baseGraphic.clipShape(Rectangle()), size: size)
+        }
         showShare = true
     }
 }

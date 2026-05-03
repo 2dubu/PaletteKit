@@ -236,3 +236,12 @@ struct CardLabView: View {
         showShare = true
     }
 }
+
+private extension GradientDirection {
+    var subtitle: String {
+        switch self {
+        case .linear: return "diagonal flow"
+        case .radial: return "off-center radial"
+        }
+    }
+}

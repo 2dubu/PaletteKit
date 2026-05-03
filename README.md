@@ -12,6 +12,16 @@ graphic primitive. Swift Package, SwiftUI- and UIKit-friendly: OKLCH
 perceptual quantization, Display P3 wide-gamut support, Semantic Swatches,
 async-only Sendable API.
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/fd0f7b6b-25c6-4141-8ffb-52b25f7ed6f7" width="23%" alt="Demo: palette extraction (photo 1)" />
+  <img src="https://github.com/user-attachments/assets/70df6fbb-95c2-4d2b-a012-5771b8f85246" width="23%" alt="Demo: PaletteGraphic Lab (photo 1)" />
+  <img src="https://github.com/user-attachments/assets/8943b285-579e-445f-a871-18f80cafa781" width="23%" alt="Demo: palette extraction (photo 2)" />
+  <img src="https://github.com/user-attachments/assets/cea20157-7b8b-4c17-acb4-2d7edf2c220d" width="23%" alt="Demo: PaletteGraphic Lab (photo 2)" />
+</p>
+<p align="center">
+  <em>Demo app: palette extraction → PaletteGraphic, on two different photos</em>
+</p>
+
 ## Quick start
 
 ### SwiftUI

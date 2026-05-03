@@ -90,3 +90,4 @@ TODO.md
 
 # Local-only bench results from Examples/PaletteKitDemo
 benchmark/
+.superpowers/

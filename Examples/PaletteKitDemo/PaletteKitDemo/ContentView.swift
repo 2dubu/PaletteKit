@@ -115,8 +115,31 @@ struct ContentView: View {
                 if let palette, let timings = palette.timings {
                     TimingsView(timings: timings)
                 }
+
+                if let palette, !palette.isEmpty {
+                    cardEntry(palette: palette)
+                }
             }
         }
+    }
+
+    @ViewBuilder
+    private func cardEntry(palette: Palette) -> some View {
+        NavigationLink {
+            CardLabView(palette: palette, swatches: swatches)
+        } label: {
+            HStack {
+                Image(systemName: "wand.and.rays")
+                Text("Generate Graphic")
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding()
+            .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
     }
 
     private var photoPicker: some View {

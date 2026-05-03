@@ -143,6 +143,15 @@ public enum GradientDirection: String, CaseIterable, Identifiable, Sendable {
     case radial = "Radial"
 
     public var id: String { rawValue }
+
+    /// Short human-readable description of the flow shape, suitable for
+    /// picker subtitles or accessibility labels.
+    public var subtitle: String {
+        switch self {
+        case .linear: return "diagonal flow"
+        case .radial: return "off-center radial"
+        }
+    }
 }
 
 /// Film-grain texture intensity for ``PaletteGraphic``.

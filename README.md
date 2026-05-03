@@ -76,11 +76,21 @@ label.textColor = UIColor(swatches.vibrant?.titleTextColor ?? .black)
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/2dubu/PaletteKit", from: "1.3.0"),
+    .package(url: "https://github.com/2dubu/PaletteKit", from: "1.4.0"),
 ]
 ```
 
 Minimum iOS 17 · Swift 6.0 · Xcode 16+.
+
+## What's new in 1.4
+
+- New `PaletteGraphic` (SwiftUI) and `PaletteGraphicView` (UIKit) primitives — render a palette-driven gradient + grain graphic from any extracted `Palette`. Both views share the same Core Image / Core Graphics pipeline for pixel-equivalent output.
+- New `Configuration` struct exposes four orthogonal axes: `direction` (linear / radial), `colorCount` (2…5 with cumulative bisection), `swatchStrategy` (vibrant / contrast / muted), `grain` (none / subtle / standard / heavy).
+- New public `CardPalette` + `SwatchStrategy` helpers resolve `center` / `edge` / `background` / `accent` colors from a `Palette` + `SwatchMap` so consumers can compose palette-themed UI without re-implementing the lookup logic.
+- Internal `NSCache` memoization in the renderer — repeated SwiftUI body invalidations with the same inputs return instantly.
+- Demo app gains a "Generate Graphic" entry that opens an interactive Graphic Lab for exploring every configuration axis on a real extracted palette.
+
+See <doc:Card> for full usage.
 
 ## What's new in 1.3
 
@@ -228,7 +238,7 @@ don't need to run it.
 ## Roadmap
 
 - **v1.3** ✅ shipped — SwiftUI ShapeStyle conformance + idiomatic UIKit integration.
-- **v1.4** — `PaletteKitCard` (palette-driven share-card graphics).
+- **v1.4** ✅ shipped — `PaletteGraphic` + `PaletteGraphicView` palette-driven graphic primitives.
 - **v2.0** — `observe()` (live video / camera) and `PaletteKitInsights` (FoundationModels captions, color naming, custom instructions on iOS 26+).
 
 Per-release notes live on [GitHub Releases](https://github.com/2dubu/PaletteKit/releases).

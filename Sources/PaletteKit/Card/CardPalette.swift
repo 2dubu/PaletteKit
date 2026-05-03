@@ -6,6 +6,9 @@ import Foundation
 /// Each strategy falls back through a sibling `SwatchMap` role and then to a
 /// raw ``Palette`` color when the requested role is absent, so a graphic
 /// always renders even on photos that don't expose every swatch.
+///
+/// Raw values are display-ready capitalised strings, suitable for direct
+/// use in pickers without further localisation.
 public enum SwatchStrategy: String, CaseIterable, Identifiable, Sendable {
     /// `vibrant → darkVibrant` — the most saturated color as the centerpiece,
     /// fading into its darker counterpart at the edge. Mirrors Android
@@ -32,11 +35,26 @@ public enum SwatchStrategy: String, CaseIterable, Identifiable, Sendable {
 /// ``SwatchStrategy`` chosen at init time picks the source roles for
 /// ``center`` and ``edge``; ``background`` and ``accent`` follow a fixed
 /// rule independent of strategy.
-public struct CardPalette: Sendable {
+public struct CardPalette: Sendable, Equatable, Hashable {
+    /// Primary fill color anchored to the strategy's `center` choice.
+    /// Used as the start stop of every gradient.
     public let center: PaletteColor
+
+    /// Counterpart fill color anchored to the strategy's `edge` choice.
+    /// Used as the end stop of every gradient.
     public let edge: PaletteColor
+
+    /// Soft surrounding tone — picks `lightMuted` first, then
+    /// `lightVibrant`, then the brightest available palette color.
+    /// Independent of the active ``strategy`` so it can frame any flow.
     public let background: PaletteColor
+
+    /// Accent color for text, badges, and stroke decoration on top of a
+    /// graphic. Picks `darkVibrant` first, then `vibrant`, then the
+    /// darkest available palette color.
     public let accent: PaletteColor
+
+    /// The ``SwatchStrategy`` used to resolve ``center`` and ``edge``.
     public let strategy: SwatchStrategy
 
     public init(palette: Palette, swatches: SwatchMap?, strategy: SwatchStrategy = .vibrant) {
@@ -45,6 +63,8 @@ public struct CardPalette: Sendable {
         let dominant = palette.dominant ?? .black
         let darkest = palette.colors.min(by: { $0.luminance < $1.luminance }) ?? dominant
         let lightest = palette.colors.max(by: { $0.luminance < $1.luminance }) ?? dominant
+        // `lightest` is used by both `background` and the `.contrast` center
+        // fallback; precomputed here for symmetry with `darkest`.
 
         let resolvedCenter: PaletteColor
         let resolvedEdge: PaletteColor

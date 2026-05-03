@@ -15,16 +15,16 @@ struct CardPaletteTests {
     }
 
     private var fullSwatches: SwatchMap {
-        let s = { (c: PaletteColor, role: SwatchRole) in
+        let swatch = { (c: PaletteColor, role: SwatchRole) in
             Swatch(color: c, role: role, titleTextColor: .white, bodyTextColor: .white)
         }
         return SwatchMap(
-            vibrant:      s(PaletteColor(r: 200, g: 80,  b: 40), .vibrant),
-            muted:        s(PaletteColor(r: 150, g: 110, b: 90), .muted),
-            darkVibrant:  s(PaletteColor(r: 90,  g: 30,  b: 10), .darkVibrant),
-            darkMuted:    s(PaletteColor(r: 70,  g: 50,  b: 35), .darkMuted),
-            lightVibrant: s(PaletteColor(r: 240, g: 150, b: 110), .lightVibrant),
-            lightMuted:   s(PaletteColor(r: 230, g: 200, b: 180), .lightMuted)
+            vibrant:      swatch(PaletteColor(r: 200, g: 80,  b: 40), .vibrant),
+            muted:        swatch(PaletteColor(r: 150, g: 110, b: 90), .muted),
+            darkVibrant:  swatch(PaletteColor(r: 90,  g: 30,  b: 10), .darkVibrant),
+            darkMuted:    swatch(PaletteColor(r: 70,  g: 50,  b: 35), .darkMuted),
+            lightVibrant: swatch(PaletteColor(r: 240, g: 150, b: 110), .lightVibrant),
+            lightMuted:   swatch(PaletteColor(r: 230, g: 200, b: 180), .lightMuted)
         )
     }
 
@@ -76,5 +76,15 @@ struct CardPaletteTests {
     @Test("SwatchStrategy.allCases enumerates the three strategies")
     func allCasesCount() {
         #expect(SwatchStrategy.allCases.count == 3)
+    }
+
+    @Test("CardPalette equality follows component equality")
+    func equatableConformance() {
+        let a = CardPalette(palette: palette, swatches: fullSwatches, strategy: .vibrant)
+        let b = CardPalette(palette: palette, swatches: fullSwatches, strategy: .vibrant)
+        let c = CardPalette(palette: palette, swatches: fullSwatches, strategy: .contrast)
+        #expect(a == b)
+        #expect(a != c)
+        #expect(a.hashValue == b.hashValue)
     }
 }

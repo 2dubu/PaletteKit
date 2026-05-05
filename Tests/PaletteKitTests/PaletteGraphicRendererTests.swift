@@ -17,9 +17,11 @@ struct PaletteGraphicRendererTests {
 
     @Test("resolveStopColors with count=2 returns [first, last] anchors")
     func twoStopAnchors() {
-        let cp = GraphicPalette(palette: palette, swatches: nil, strategy: .vibrant)
+        let (center, edge) = PaletteGraphicRenderer.resolveAnchors(
+            palette: palette, swatches: nil, strategy: .vibrant
+        )
         let stops = PaletteGraphicRenderer.resolveStopColors(
-            palette: palette, swatches: nil, graphicPalette: cp, count: 2
+            palette: palette, swatches: nil, center: center, edge: edge, count: 2
         )
         #expect(stops.count == 2)
         #expect(stops.first?.luminance ?? 0 >= stops.last?.luminance ?? 1)
@@ -27,10 +29,12 @@ struct PaletteGraphicRendererTests {
 
     @Test("resolveStopColors monotonic luminance for any count")
     func monotonicLuminance() {
-        let cp = GraphicPalette(palette: palette, swatches: nil, strategy: .vibrant)
+        let (center, edge) = PaletteGraphicRenderer.resolveAnchors(
+            palette: palette, swatches: nil, strategy: .vibrant
+        )
         for count in 2...5 {
             let stops = PaletteGraphicRenderer.resolveStopColors(
-                palette: palette, swatches: nil, graphicPalette: cp, count: count
+                palette: palette, swatches: nil, center: center, edge: edge, count: count
             )
             for i in 1..<stops.count {
                 #expect(stops[i].luminance <= stops[i - 1].luminance,
@@ -41,13 +45,15 @@ struct PaletteGraphicRendererTests {
 
     @Test("cumulative bisection: count N stops are subset of count N+1 stops (anchors invariant)")
     func cumulativeProperty() {
-        let cp = GraphicPalette(palette: palette, swatches: nil, strategy: .vibrant)
+        let (center, edge) = PaletteGraphicRenderer.resolveAnchors(
+            palette: palette, swatches: nil, strategy: .vibrant
+        )
         for count in 2...4 {
             let small = PaletteGraphicRenderer.resolveStopColors(
-                palette: palette, swatches: nil, graphicPalette: cp, count: count
+                palette: palette, swatches: nil, center: center, edge: edge, count: count
             )
             let big = PaletteGraphicRenderer.resolveStopColors(
-                palette: palette, swatches: nil, graphicPalette: cp, count: count + 1
+                palette: palette, swatches: nil, center: center, edge: edge, count: count + 1
             )
             #expect(small.first?.hex == big.first?.hex)
             #expect(small.last?.hex == big.last?.hex)

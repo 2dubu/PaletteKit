@@ -26,6 +26,35 @@ AsyncPaletteGraphic(image: .url(url)) {
 .clipShape(RoundedRectangle(cornerRadius: 24))
 ```
 
+## Phase-based usage
+
+For telemetry, secondary UI composition, or custom error rendering, use
+the phase-based init that mirrors `AsyncImage`:
+
+```swift
+AsyncPaletteGraphic(image: .url(url)) { phase in
+    switch phase {
+    case .empty, .loading:
+        ProgressView()
+    case .success(let palette, let swatches, _):
+        HStack {
+            PaletteGraphic(palette: palette, swatches: swatches, configuration: .init())
+                .frame(width: 200, height: 200)
+            VStack(alignment: .leading) {
+                ForEach(palette.colors.prefix(5), id: \.hex) { color in
+                    Circle().fill(Color(color)).frame(width: 16, height: 16)
+                }
+            }
+        }
+    case .failure(let error):
+        Text(error.localizedDescription).foregroundStyle(.red)
+    }
+}
+```
+
+The phase init takes no `onFailure` callback — observe `.failure(_)`
+directly in the closure.
+
 ## Caching
 
 By default the views use ``PaletteCache/shared`` — a process-wide
@@ -80,6 +109,9 @@ For UIKit, set ``AsyncPaletteGraphicView/onFailure`` directly.
 ### Async views
 - ``AsyncPaletteGraphic``
 - ``AsyncPaletteGraphicView``
+
+### Phase observation
+- ``AsyncPaletteGraphicPhase``
 
 ### Cache
 - ``PaletteCache``

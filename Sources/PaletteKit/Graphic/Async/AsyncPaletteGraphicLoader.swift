@@ -2,18 +2,6 @@
 import Foundation
 import SwiftUI
 
-/// Resolution state for ``AsyncPaletteGraphic`` / ``AsyncPaletteGraphicView``.
-///
-/// State transitions: `.empty` → `.loading` → `.success` | `.failure`.
-/// Cache hits skip `.loading` and land directly in
-/// `.success(_, _, fromCache: true)`.
-enum ResolutionPhase {
-    case empty
-    case loading
-    case success(palette: Palette, swatches: SwatchMap?, fromCache: Bool)
-    case failure(any Error)
-}
-
 /// Identifies a resolution attempt by image source + extraction options +
 /// optional caller-supplied cache key. Hashable for `.task(id:)` and for
 /// `PaletteCache` lookups.
@@ -97,7 +85,7 @@ struct ResolutionContext: Hashable {
 /// integrates with ``PaletteCache``, and publishes a 4-state machine.
 @MainActor
 final class AsyncPaletteGraphicLoader: ObservableObject {
-    @Published private(set) var phase: ResolutionPhase = .empty
+    @Published private(set) var phase: AsyncPaletteGraphicPhase = .empty
 
     /// Telemetry callback fired on extraction failure (not on cancellation).
     var onFailure: ((any Error) -> Void)?

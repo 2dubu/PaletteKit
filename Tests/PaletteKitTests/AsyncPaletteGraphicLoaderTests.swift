@@ -212,6 +212,27 @@ struct AsyncPaletteGraphicSmokeTests {
             Color.gray.opacity(0.1)
         }
     }
+
+    @Test("can instantiate with phase content closure")
+    func phaseInit() throws {
+        let url = URL(string: "https://example.com/x.jpg")!
+        _ = AsyncPaletteGraphic(image: .url(url)) { phase in
+            switch phase {
+            case .empty, .loading: AnyView(Color.gray)
+            case .success(_, _, _): AnyView(Color.blue)
+            case .failure: AnyView(Color.red)
+            }
+        }
+    }
+
+    @Test("can instantiate convenience init without swatchStrategy parameter")
+    func conveniencePostStrategyDrop() throws {
+        let url = URL(string: "https://example.com/x.jpg")!
+        _ = AsyncPaletteGraphic(
+            image: .url(url),
+            configuration: .init(swatchStrategy: .contrast)
+        )
+    }
 }
 #endif
 #endif

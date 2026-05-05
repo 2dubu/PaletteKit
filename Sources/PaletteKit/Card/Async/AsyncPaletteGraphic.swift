@@ -25,7 +25,7 @@ public struct AsyncPaletteGraphic<Placeholder: View>: View {
     private let swatchStrategy: SwatchStrategy
     private let cache: PaletteCache?
     private let cacheKey: AnyHashable?
-    private let onFailure: ((Error) -> Void)?
+    private let onFailure: ((any Error) -> Void)?
     private let placeholder: () -> Placeholder
 
     @StateObject private var loader = AsyncPaletteGraphicLoader()
@@ -38,7 +38,7 @@ public struct AsyncPaletteGraphic<Placeholder: View>: View {
         swatchStrategy: SwatchStrategy = .vibrant,
         cache: PaletteCache? = .shared,
         cacheKey: AnyHashable? = nil,
-        onFailure: ((Error) -> Void)? = nil,
+        onFailure: ((any Error) -> Void)? = nil,
         @ViewBuilder placeholder: @escaping () -> Placeholder
     ) {
         self.image = image
@@ -55,17 +55,17 @@ public struct AsyncPaletteGraphic<Placeholder: View>: View {
         let context = ResolutionContext(
             image: image, options: extractionOptions, cacheKey: cacheKey
         )
-        ZStack {
+        var resolvedConfiguration = configuration
+        resolvedConfiguration.swatchStrategy = swatchStrategy
+        return ZStack {
             switch loader.phase {
             case .empty, .loading, .failure:
                 placeholder()
             case .success(let palette, let swatches, let fromCache):
-                var cfg = configuration
-                cfg.swatchStrategy = swatchStrategy
                 PaletteGraphic(
                     palette: palette,
                     swatches: swatches,
-                    configuration: cfg
+                    configuration: resolvedConfiguration
                 )
                 .modifier(TransitionAnimationModifier(
                     transition: fromCache ? nil : transition
@@ -92,7 +92,7 @@ extension AsyncPaletteGraphic where Placeholder == Color {
         swatchStrategy: SwatchStrategy = .vibrant,
         cache: PaletteCache? = .shared,
         cacheKey: AnyHashable? = nil,
-        onFailure: ((Error) -> Void)? = nil
+        onFailure: ((any Error) -> Void)? = nil
     ) {
         self.init(
             image: image,

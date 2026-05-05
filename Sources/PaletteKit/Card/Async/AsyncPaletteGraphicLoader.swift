@@ -11,7 +11,7 @@ enum ResolutionPhase {
     case empty
     case loading
     case success(palette: Palette, swatches: SwatchMap?, fromCache: Bool)
-    case failure(Error)
+    case failure(any Error)
 }
 
 /// Identifies a resolution attempt by image source + extraction options +
@@ -82,7 +82,7 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
     @Published private(set) var phase: ResolutionPhase = .empty
 
     /// Telemetry callback fired on extraction failure (not on cancellation).
-    var onFailure: ((Error) -> Void)?
+    var onFailure: ((any Error) -> Void)?
     /// Telemetry callback fired on successful resolution. The third
     /// parameter is `true` when the result came from ``PaletteCache``
     /// (synchronous resolution, no transition); `false` when newly

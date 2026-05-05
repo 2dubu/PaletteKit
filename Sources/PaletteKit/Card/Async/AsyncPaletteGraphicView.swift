@@ -91,7 +91,7 @@ public final class AsyncPaletteGraphicView: UIView {
     public var onSuccess: ((Palette, SwatchMap?) -> Void)?
 
     /// Called on the main actor when extraction fails (not on cancellation).
-    public var onFailure: ((Error) -> Void)?
+    public var onFailure: ((any Error) -> Void)?
 
     // MARK: - Internals
 
@@ -136,10 +136,6 @@ public final class AsyncPaletteGraphicView: UIView {
     /// Call this from `UICollectionViewCell.prepareForReuse` before
     /// clearing ``imageSource`` to avoid stale callbacks.
     public func cancel() {
-        loader.cancel()
-    }
-
-    deinit {
         loader.cancel()
     }
 

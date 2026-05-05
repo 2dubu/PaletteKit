@@ -1,6 +1,6 @@
 import Foundation
 
-/// Which `SwatchMap` roles a ``CardPalette`` maps to its `center` and `edge`
+/// Which `SwatchMap` roles a ``GraphicPalette`` maps to its `center` and `edge`
 /// stops, controlling the overall mood of the resulting graphic.
 ///
 /// Each strategy falls back through a sibling `SwatchMap` role and then to a
@@ -35,7 +35,7 @@ public enum SwatchStrategy: String, CaseIterable, Identifiable, Sendable {
 /// ``SwatchStrategy`` chosen at init time picks the source roles for
 /// ``center`` and ``edge``; ``background`` and ``accent`` follow a fixed
 /// rule independent of strategy.
-public struct CardPalette: Sendable, Equatable, Hashable {
+public struct GraphicPalette: Sendable, Equatable, Hashable {
     /// Primary fill color anchored to the strategy's `center` choice.
     /// Used as the start stop of every gradient.
     public let center: PaletteColor

@@ -37,11 +37,11 @@ internal enum PaletteGraphicRenderer {
             return cached
         }
 
-        let cardPalette = CardPalette(palette: palette, swatches: swatches,
-                                      strategy: configuration.swatchStrategy)
+        let graphicPalette = GraphicPalette(palette: palette, swatches: swatches,
+                                            strategy: configuration.swatchStrategy)
         let stopColors = resolveStopColors(
             palette: palette, swatches: swatches,
-            cardPalette: cardPalette, count: configuration.colorCount.rawValue
+            graphicPalette: graphicPalette, count: configuration.colorCount.rawValue
         )
         let extent = CGRect(origin: .zero, size: pixelSize)
 
@@ -69,12 +69,12 @@ internal enum PaletteGraphicRenderer {
     static func resolveStopColors(
         palette: Palette,
         swatches: SwatchMap?,
-        cardPalette: CardPalette,
+        graphicPalette: GraphicPalette,
         count: Int
     ) -> [PaletteColor] {
-        let firstBrighter = cardPalette.center.luminance >= cardPalette.edge.luminance
-        let first = firstBrighter ? cardPalette.center : cardPalette.edge
-        let last  = firstBrighter ? cardPalette.edge   : cardPalette.center
+        let firstBrighter = graphicPalette.center.luminance >= graphicPalette.edge.luminance
+        let first = firstBrighter ? graphicPalette.center : graphicPalette.edge
+        let last  = firstBrighter ? graphicPalette.edge   : graphicPalette.center
 
         if count <= 2 {
             return [first, last]

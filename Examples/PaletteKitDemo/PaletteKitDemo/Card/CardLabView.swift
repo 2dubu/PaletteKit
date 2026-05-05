@@ -65,12 +65,12 @@ struct CardLabView: View {
         )
     }
 
-    private var cardPalette: CardPalette {
-        CardPalette(palette: palette, swatches: swatches, strategy: strategy)
+    private var graphicPalette: GraphicPalette {
+        GraphicPalette(palette: palette, swatches: swatches, strategy: strategy)
     }
 
     var body: some View {
-        let cp = cardPalette
+        let cp = graphicPalette
         VStack(spacing: 12) {
             directionPicker
                 .padding(.horizontal, 16)
@@ -166,7 +166,7 @@ struct CardLabView: View {
     }
 
     @ViewBuilder
-    private func graphicArea(cp: CardPalette) -> some View {
+    private func graphicArea(cp: GraphicPalette) -> some View {
         let graphic = PaletteGraphic(palette: palette, swatches: swatches, configuration: configuration)
             .aspectRatio(1.0, contentMode: .fit)
 
@@ -180,7 +180,7 @@ struct CardLabView: View {
         .shadow(color: Color(cp.edge).opacity(0.18), radius: 18, x: 0, y: 12)
     }
 
-    private func swatchChipBar(cp: CardPalette) -> some View {
+    private func swatchChipBar(cp: GraphicPalette) -> some View {
         HStack(spacing: 8) {
             chip(label: "center", color: cp.center, cp: cp)
             chip(label: "edge", color: cp.edge, cp: cp)
@@ -189,7 +189,7 @@ struct CardLabView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    private func chip(label: String, color: PaletteColor, cp: CardPalette) -> some View {
+    private func chip(label: String, color: PaletteColor, cp: GraphicPalette) -> some View {
         VStack(spacing: 3) {
             RoundedRectangle(cornerRadius: 6)
                 .fill(Color(color))
@@ -207,7 +207,7 @@ struct CardLabView: View {
         }
     }
 
-    private func footerLabel(cp: CardPalette) -> some View {
+    private func footerLabel(cp: GraphicPalette) -> some View {
         VStack(spacing: 2) {
             Text("\(direction.rawValue) · \(strategy.rawValue) · \(grain.rawValue)")
                 .font(.system(.caption, design: .rounded, weight: .semibold))

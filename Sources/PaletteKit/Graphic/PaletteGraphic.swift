@@ -55,8 +55,8 @@ public struct PaletteGraphic: View {
                     .resizable()
                     .scaledToFill()
             } else {
-                Color(CardPalette(palette: palette, swatches: swatches,
-                                  strategy: configuration.swatchStrategy).center)
+                Color(GraphicPalette(palette: palette, swatches: swatches,
+                                     strategy: configuration.swatchStrategy).center)
             }
         }
     }

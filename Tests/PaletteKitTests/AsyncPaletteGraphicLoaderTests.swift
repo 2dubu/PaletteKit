@@ -24,7 +24,7 @@ struct AsyncPaletteGraphicLoaderTests {
             options: .init(),
             cacheKey: AnyHashable("seeded-key")
         )
-        cache.set(palette: palette, swatches: nil, forKey: context.hashValue)
+        cache.set(palette: palette, swatches: nil, forKey: context.storageKey)
 
         let loader = AsyncPaletteGraphicLoader()
         loader.load(context: context, cache: cache)
@@ -67,7 +67,7 @@ struct AsyncPaletteGraphicLoaderTests {
         #expect(p.colors.first?.rgb.r ?? 0 > 150) // dominant red
 
         // Cache should now be populated for the same key.
-        #expect(cache.entry(forKey: context.hashValue) != nil)
+        #expect(cache.entry(forKey: context.storageKey) != nil)
     }
 
     @Test("load: invalid source → .failure, onFailure called")
@@ -117,40 +117,48 @@ struct AsyncPaletteGraphicLoaderTests {
         }
     }
 
-    @Test("ResolutionContext: same inputs produce same hashValue")
-    func contextHashStable() throws {
+    @Test("ResolutionContext: same inputs produce same storageKey")
+    func contextStorageKeyStable() throws {
         let url = URL(string: "https://example.com/img.jpg")!
         let a = ResolutionContext(image: .url(url), options: .init(), cacheKey: nil)
         let b = ResolutionContext(image: .url(url), options: .init(), cacheKey: nil)
-        #expect(a.hashValue == b.hashValue)
+        #expect(a.storageKey == b.storageKey)
+        #expect(a.hashValue == b.hashValue)  // still works, derived from storageKey
     }
 
-    @Test("ResolutionContext: different cacheKey produces different hashValue")
-    func contextHashKeyMatters() throws {
+    @Test("ResolutionContext: different cacheKey produces different storageKey")
+    func contextStorageKeySensitiveToCacheKey() throws {
         let url = URL(string: "https://example.com/img.jpg")!
         let a = ResolutionContext(image: .url(url), options: .init(), cacheKey: AnyHashable("a"))
         let b = ResolutionContext(image: .url(url), options: .init(), cacheKey: AnyHashable("b"))
-        #expect(a.hashValue != b.hashValue)
+        #expect(a.storageKey != b.storageKey)
     }
 
-    @Test("ResolutionContext: different quality strides produce different hashValues")
+    @Test("ResolutionContext: storageKey contains image source discriminator")
+    func contextStorageKeyHasSource() throws {
+        let url = URL(string: "https://example.com/img.jpg")!
+        let ctx = ResolutionContext(image: .url(url), options: .init(), cacheKey: nil)
+        #expect(ctx.storageKey.hasPrefix("url:https://example.com/img.jpg"))
+    }
+
+    @Test("ResolutionContext: different quality strides produce different keys")
     func contextHashSensitiveToQuality() {
         let url = URL(string: "https://example.com/img.jpg")!
         var optsA = ExtractionOptions(); optsA.quality = .stride(10)
         var optsB = ExtractionOptions(); optsB.quality = .stride(2)
         let a = ResolutionContext(image: .url(url), options: optsA, cacheKey: nil)
         let b = ResolutionContext(image: .url(url), options: optsB, cacheKey: nil)
-        #expect(a.hashValue != b.hashValue)
+        #expect(a.storageKey != b.storageKey)
     }
 
-    @Test("ResolutionContext: different fallbackStrategy produces different hashValues")
+    @Test("ResolutionContext: different fallbackStrategy produce different keys")
     func contextHashSensitiveToFallback() {
         let url = URL(string: "https://example.com/img.jpg")!
         var optsA = ExtractionOptions(); optsA.fallbackStrategy = .relax
         var optsB = ExtractionOptions(); optsB.fallbackStrategy = .fail
         let a = ResolutionContext(image: .url(url), options: optsA, cacheKey: nil)
         let b = ResolutionContext(image: .url(url), options: optsB, cacheKey: nil)
-        #expect(a.hashValue != b.hashValue)
+        #expect(a.storageKey != b.storageKey)
     }
 
     // MARK: - Helpers

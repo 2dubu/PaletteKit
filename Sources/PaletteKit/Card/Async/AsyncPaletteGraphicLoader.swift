@@ -28,42 +28,60 @@ struct ResolutionContext: Hashable {
         self.cacheKey = cacheKey
     }
 
-    func hash(into hasher: inout Hasher) {
+    /// Stable, debuggable string identity used for `PaletteCache` lookups
+    /// and for SwiftUI `.task(id:)` invalidation. Composes image source
+    /// discriminator + URL/identity + ExtractionOptions fingerprint +
+    /// optional caller-supplied cache key.
+    ///
+    /// Example: `"url:https://example.com/img.jpg|opts:c10-q10-cs2-iwhT-..|key:itemId"`
+    var storageKey: String {
+        var parts: [String] = []
         switch image {
         case .url(let url):
-            hasher.combine(0)
-            hasher.combine(url.absoluteString)
+            parts.append("url:\(url.absoluteString)")
         case .data(let data):
-            hasher.combine(1)
-            // Hash data identity, not contents — caller opts in to content
-            // dedup via explicit cacheKey.
-            hasher.combine(ObjectIdentifier(data as NSData))
+            // Pointer identity — caller supplies stable cacheKey for content dedup.
+            parts.append("data:\(ObjectIdentifier(data as NSData).debugDescription)")
         case .cgImage(let img):
-            hasher.combine(2)
-            hasher.combine(ObjectIdentifier(img))
+            parts.append("cgimage:\(ObjectIdentifier(img).debugDescription)")
         }
-        // ExtractionOptions does not conform to Hashable; fold every
-        // observable field manually so cache keys invalidate when any
-        // option that affects the palette changes. `collectTimings` is
-        // cosmetic and intentionally skipped.
-        hasher.combine(options.colorCount)
-        hasher.combine(options.quality.hashKey)
-        hasher.combine(options.colorSpace.hashKey)
-        hasher.combine(options.ignoreWhite)
-        hasher.combine(options.whiteThreshold)
-        hasher.combine(options.alphaThreshold)
-        hasher.combine(options.minSaturation)
-        hasher.combine(options.fallbackStrategy.hashKey)
-        hasher.combine(options.autoOrient)
-        options.downsample.combine(into: &hasher)
-        hasher.combine(options.quantizer.hashKey)
-        if let key = cacheKey {
-            hasher.combine(key)
+        parts.append("opts:\(optionsFingerprint)")
+        if let cacheKey {
+            parts.append("key:\(cacheKey.base)")
+        }
+        return parts.joined(separator: "|")
+    }
+
+    private var optionsFingerprint: String {
+        // Compact format covering all observable fields. `collectTimings`
+        // intentionally skipped (cosmetic, doesn't affect output).
+        "c\(options.colorCount)" +
+        "-q\(options.quality.strideValue)" +
+        "-cs\(options.colorSpace.hashKey)" +
+        "-iw\(options.ignoreWhite ? "T" : "F")" +
+        "-wt\(options.whiteThreshold)" +
+        "-at\(options.alphaThreshold)" +
+        "-ms\(options.minSaturation)" +
+        "-fs\(options.fallbackStrategy.hashKey)" +
+        "-ao\(options.autoOrient ? "T" : "F")" +
+        "-ds\(downsampleFingerprint)" +
+        "-qz\(options.quantizer.hashKey)"
+    }
+
+    private var downsampleFingerprint: String {
+        switch options.downsample {
+        case .disabled: return "d"
+        case .automatic(let maxPixels): return "a\(maxPixels)"
+        case .maxEdge(let edge): return "e\(edge)"
         }
     }
 
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(storageKey)
+    }
+
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.hashValue == rhs.hashValue
+        lhs.storageKey == rhs.storageKey
     }
 
     /// True when caller-supplied cacheKey OR URL source enables caching.
@@ -113,7 +131,7 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
         lastContext = context
 
         // Cache hit path — synchronous resolution.
-        if let cache, context.isCacheable, let entry = cache.entry(forKey: context.hashValue) {
+        if let cache, context.isCacheable, let entry = cache.entry(forKey: context.storageKey) {
             phase = .success(palette: entry.palette, swatches: entry.swatches, fromCache: true)
             onSuccess?(entry.palette, entry.swatches, true)
             return
@@ -131,7 +149,7 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
                 try Task.checkCancellation()
                 guard let self else { return }
                 if let cache, context.isCacheable {
-                    cache.set(palette: palette, swatches: swatches, forKey: context.hashValue)
+                    cache.set(palette: palette, swatches: swatches, forKey: context.storageKey)
                 }
                 self.phase = .success(palette: palette, swatches: swatches, fromCache: false)
                 onSuccessCallback?(palette, swatches, false)
@@ -187,21 +205,6 @@ private extension FallbackStrategy {
         case .relax: return 0
         case .fail: return 1
         case .averageOnly: return 2
-        }
-    }
-}
-
-private extension Downsample {
-    func combine(into hasher: inout Hasher) {
-        switch self {
-        case .disabled:
-            hasher.combine(0)
-        case .automatic(let maxPixels):
-            hasher.combine(1)
-            hasher.combine(maxPixels)
-        case .maxEdge(let edge):
-            hasher.combine(2)
-            hasher.combine(edge)
         }
     }
 }

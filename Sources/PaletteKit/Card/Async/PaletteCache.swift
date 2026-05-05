@@ -14,7 +14,7 @@ import Foundation
 public final class PaletteCache: @unchecked Sendable {
     /// Process-wide shared cache used as the default for
     /// ``AsyncPaletteGraphic`` and ``AsyncPaletteGraphicView``.
-    public static let shared = PaletteCache(countLimit: 32)
+    public static let shared = PaletteCache(countLimit: 100)
 
     /// Maximum number of cached entries before NSCache starts evicting.
     public let countLimit: Int
@@ -29,25 +29,25 @@ public final class PaletteCache: @unchecked Sendable {
         }
     }
 
-    private let store: NSCache<NSNumber, Entry>
+    private let store: NSCache<NSString, Entry>
 
-    public init(countLimit: Int = 32) {
+    public init(countLimit: Int = 100) {
         self.countLimit = countLimit
-        let store = NSCache<NSNumber, Entry>()
+        let store = NSCache<NSString, Entry>()
         store.countLimit = countLimit
         self.store = store
     }
 
-    /// Look up a cached resolution by hashed key. Returns `nil` on miss.
-    public func entry(forKey key: Int) -> (palette: Palette, swatches: SwatchMap?)? {
-        guard let entry = store.object(forKey: NSNumber(value: key)) else { return nil }
+    /// Look up a cached resolution by string key. Returns `nil` on miss.
+    public func entry(forKey key: String) -> (palette: Palette, swatches: SwatchMap?)? {
+        guard let entry = store.object(forKey: key as NSString) else { return nil }
         return (entry.palette, entry.swatches)
     }
 
-    /// Store a resolved palette + swatches under the given hashed key.
-    public func set(palette: Palette, swatches: SwatchMap?, forKey key: Int) {
+    /// Store a resolved palette + swatches under the given string key.
+    public func set(palette: Palette, swatches: SwatchMap?, forKey key: String) {
         store.setObject(Entry(palette: palette, swatches: swatches),
-                        forKey: NSNumber(value: key))
+                        forKey: key as NSString)
     }
 
     /// Drop all cached entries (e.g. on sign-out, theme reset, low memory).

@@ -72,7 +72,7 @@ public struct AsyncPaletteGraphic<Placeholder: View>: View {
                 ))
             }
         }
-        .task(id: context.hashValue) {
+        .task(id: context) {
             loader.onFailure = onFailure
             loader.load(context: context, cache: cache)
         }

@@ -29,7 +29,7 @@ AsyncPaletteGraphic(image: .url(url)) {
 ## Caching
 
 By default the views use ``PaletteCache/shared`` — a process-wide
-``PaletteCache`` with `countLimit = 32`. URL-sourced extractions are
+``PaletteCache`` with `countLimit = 100`. URL-sourced extractions are
 cached automatically; pass an explicit `cacheKey` to enable caching for
 `.data(_:)` or `.cgImage(_:)` sources.
 

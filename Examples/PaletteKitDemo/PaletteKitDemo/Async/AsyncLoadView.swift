@@ -34,7 +34,7 @@ struct AsyncLoadView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 320)
                         .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .id(urlString)  // force fresh load on URL change
+                        .asyncPaletteGraphicTransition(.normal)
                     } else {
                         Text("Enter an http(s) URL").foregroundStyle(.secondary)
                     }

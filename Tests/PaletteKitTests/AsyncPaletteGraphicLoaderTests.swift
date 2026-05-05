@@ -133,6 +133,26 @@ struct AsyncPaletteGraphicLoaderTests {
         #expect(a.hashValue != b.hashValue)
     }
 
+    @Test("ResolutionContext: different quality strides produce different hashValues")
+    func contextHashSensitiveToQuality() {
+        let url = URL(string: "https://example.com/img.jpg")!
+        var optsA = ExtractionOptions(); optsA.quality = .stride(10)
+        var optsB = ExtractionOptions(); optsB.quality = .stride(2)
+        let a = ResolutionContext(image: .url(url), options: optsA, cacheKey: nil)
+        let b = ResolutionContext(image: .url(url), options: optsB, cacheKey: nil)
+        #expect(a.hashValue != b.hashValue)
+    }
+
+    @Test("ResolutionContext: different fallbackStrategy produces different hashValues")
+    func contextHashSensitiveToFallback() {
+        let url = URL(string: "https://example.com/img.jpg")!
+        var optsA = ExtractionOptions(); optsA.fallbackStrategy = .relax
+        var optsB = ExtractionOptions(); optsB.fallbackStrategy = .fail
+        let a = ResolutionContext(image: .url(url), options: optsA, cacheKey: nil)
+        let b = ResolutionContext(image: .url(url), options: optsB, cacheKey: nil)
+        #expect(a.hashValue != b.hashValue)
+    }
+
     // MARK: - Helpers
 
     @MainActor

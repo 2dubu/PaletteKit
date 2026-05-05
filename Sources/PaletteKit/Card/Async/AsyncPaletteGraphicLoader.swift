@@ -42,11 +42,21 @@ struct ResolutionContext: Hashable {
             hasher.combine(2)
             hasher.combine(ObjectIdentifier(img))
         }
-        // ExtractionOptions does not currently conform to Hashable; fold
-        // its observable fields manually. Update if Hashable is added.
+        // ExtractionOptions does not conform to Hashable; fold every
+        // observable field manually so cache keys invalidate when any
+        // option that affects the palette changes. `collectTimings` is
+        // cosmetic and intentionally skipped.
         hasher.combine(options.colorCount)
+        hasher.combine(options.quality.hashKey)
         hasher.combine(options.colorSpace.hashKey)
         hasher.combine(options.ignoreWhite)
+        hasher.combine(options.whiteThreshold)
+        hasher.combine(options.alphaThreshold)
+        hasher.combine(options.minSaturation)
+        hasher.combine(options.fallbackStrategy.hashKey)
+        hasher.combine(options.autoOrient)
+        options.downsample.combine(into: &hasher)
+        hasher.combine(options.quantizer.hashKey)
         if let key = cacheKey {
             hasher.combine(key)
         }
@@ -84,8 +94,17 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
     /// transitions to `.loading` and kicks off an extraction `Task`.
     /// Cancels any in-flight `Task` for a previous context.
     func load(context: ResolutionContext, cache: PaletteCache?) {
-        // Same context as last call — no work needed unless cache was cleared.
-        if context == lastContext, case .success = phase { return }
+        // Same context as last call — short-circuit unless we're in a
+        // restartable phase (caller can retry .failure or .empty by
+        // re-invoking load).
+        if context == lastContext {
+            switch phase {
+            case .success, .loading:
+                return
+            case .empty, .failure:
+                break
+            }
+        }
 
         task?.cancel()
         lastContext = context
@@ -142,6 +161,49 @@ private extension ColorSpace {
         case .sRGB: return 0
         case .displayP3: return 1
         case .oklch: return 2
+        }
+    }
+}
+
+private extension Quality {
+    var hashKey: Int { strideValue }
+}
+
+private extension FallbackStrategy {
+    var hashKey: Int {
+        switch self {
+        case .relax: return 0
+        case .fail: return 1
+        case .averageOnly: return 2
+        }
+    }
+}
+
+private extension Downsample {
+    func combine(into hasher: inout Hasher) {
+        switch self {
+        case .disabled:
+            hasher.combine(0)
+        case .automatic(let maxPixels):
+            hasher.combine(1)
+            hasher.combine(maxPixels)
+        case .maxEdge(let edge):
+            hasher.combine(2)
+            hasher.combine(edge)
+        }
+    }
+}
+
+private extension QuantizerSelection {
+    /// `.custom` only contributes its case discriminant — the underlying
+    /// `any Quantizer` is opaque. Callers using `.custom` should pass an
+    /// explicit `cacheKey` if they need cache differentiation.
+    var hashKey: Int {
+        switch self {
+        case .auto: return 0
+        case .cpu: return 1
+        case .metal: return 2
+        case .custom: return 3
         }
     }
 }

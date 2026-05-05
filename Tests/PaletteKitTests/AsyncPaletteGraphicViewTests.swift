@@ -12,15 +12,30 @@ struct AsyncPaletteGraphicViewTests {
         #expect(view.imageSource == nil)
     }
 
-    @Test("setting imageSource triggers reload")
-    func sourceTriggersReload() {
+    @Test("reload() forces a second extraction even with same source")
+    func reloadForcesSecondExtraction() async throws {
         let view = AsyncPaletteGraphicView(frame: .init(x: 0, y: 0, width: 100, height: 100))
-        let cgImage = AsyncTestSupport.makeSolidImage(rgb: (10, 20, 30))
-        view.cacheKey = AnyHashable("trigger-test")
+        let cgImage = AsyncTestSupport.makeSolidImage(rgb: (200, 50, 50))
+
+        var resolveCount = 0
+        view.onSuccess = { _, _ in resolveCount += 1 }
+        view.cacheKey = AnyHashable("reload-force-test")
         view.imageSource = .cgImage(cgImage)
-        // Reload should be in-flight or already resolved.
-        // Loader is private; observe via onSuccess closure timing in next test.
-        #expect(view.imageSource != nil)
+
+        // Wait for first resolution.
+        let deadline1 = ContinuousClock.now.advanced(by: .seconds(5))
+        while ContinuousClock.now < deadline1, resolveCount < 1 {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        #expect(resolveCount == 1)
+
+        // Force reload — must trigger a second resolution.
+        view.reload()
+        let deadline2 = ContinuousClock.now.advanced(by: .seconds(5))
+        while ContinuousClock.now < deadline2, resolveCount < 2 {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        #expect(resolveCount == 2)
     }
 
     @Test("onSuccess fires after extraction completes")

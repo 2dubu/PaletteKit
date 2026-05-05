@@ -83,8 +83,11 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
 
     /// Telemetry callback fired on extraction failure (not on cancellation).
     var onFailure: ((Error) -> Void)?
-    /// Telemetry callback fired on successful resolution (cache hit OR miss).
-    var onSuccess: ((Palette, SwatchMap?) -> Void)?
+    /// Telemetry callback fired on successful resolution. The third
+    /// parameter is `true` when the result came from ``PaletteCache``
+    /// (synchronous resolution, no transition); `false` when newly
+    /// extracted.
+    var onSuccess: ((Palette, SwatchMap?, _ fromCache: Bool) -> Void)?
 
     private var task: Task<Void, Never>?
     private var lastContext: ResolutionContext?
@@ -112,7 +115,7 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
         // Cache hit path — synchronous resolution.
         if let cache, context.isCacheable, let entry = cache.entry(forKey: context.hashValue) {
             phase = .success(palette: entry.palette, swatches: entry.swatches, fromCache: true)
-            onSuccess?(entry.palette, entry.swatches)
+            onSuccess?(entry.palette, entry.swatches, true)
             return
         }
 
@@ -131,7 +134,7 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
                     cache.set(palette: palette, swatches: swatches, forKey: context.hashValue)
                 }
                 self.phase = .success(palette: palette, swatches: swatches, fromCache: false)
-                onSuccessCallback?(palette, swatches)
+                onSuccessCallback?(palette, swatches, false)
             } catch is CancellationError {
                 return
             } catch {
@@ -140,6 +143,15 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
                 onFailureCallback?(error)
             }
         }
+    }
+
+    /// Like ``load(context:cache:)`` but bypasses the same-context
+    /// short-circuit. Use when the underlying source has changed in a
+    /// way the context can't see (e.g., on-disk file rewrite for a URL
+    /// that hashes the same).
+    func forceLoad(context: ResolutionContext, cache: PaletteCache?) {
+        lastContext = nil
+        load(context: context, cache: cache)
     }
 
     /// Cancel any in-flight resolution. Safe to call repeatedly.

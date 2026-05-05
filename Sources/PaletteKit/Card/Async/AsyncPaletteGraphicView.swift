@@ -119,16 +119,16 @@ public final class AsyncPaletteGraphicView: UIView {
 
     // MARK: - Public API
 
-    /// Force-reload from the current ``imageSource``, bypassing the
-    /// context-equality guard. Useful when the caller knows the underlying
-    /// image data has changed without a new `ImageSource` value.
+    /// Force re-extraction even when source is unchanged. Use after the
+    /// underlying image data changes in a way the source identity can't
+    /// see (e.g., on-disk file rewrite at the same URL).
     public func reload() {
         guard let imageSource else { return }
         let context = ResolutionContext(
             image: imageSource, options: extractionOptions, cacheKey: cacheKey
         )
         lastContext = context
-        loader.load(context: context, cache: cache)
+        loader.forceLoad(context: context, cache: cache)
     }
 
     /// Cancel any in-flight palette extraction. Safe to call repeatedly.
@@ -149,9 +149,9 @@ public final class AsyncPaletteGraphicView: UIView {
         loader.onFailure = { [weak self] error in
             self?.onFailure?(error)
         }
-        loader.onSuccess = { [weak self] palette, swatches in
+        loader.onSuccess = { [weak self] palette, swatches, fromCache in
             self?.onSuccess?(palette, swatches)
-            self?.handleSuccess(palette: palette, swatches: swatches)
+            self?.handleSuccess(palette: palette, swatches: swatches, fromCache: fromCache)
         }
     }
 
@@ -169,7 +169,7 @@ public final class AsyncPaletteGraphicView: UIView {
         loader.load(context: context, cache: cache)
     }
 
-    private func handleSuccess(palette: Palette, swatches: SwatchMap?) {
+    private func handleSuccess(palette: Palette, swatches: SwatchMap?, fromCache: Bool) {
         var cfg = configuration
         cfg.swatchStrategy = swatchStrategy
         let resolved = PaletteGraphicView(
@@ -191,7 +191,7 @@ public final class AsyncPaletteGraphicView: UIView {
             self.graphicView = resolved
         }
 
-        if let transition, case .success(_, _, let fromCache) = loader.phase, !fromCache {
+        if let transition, !fromCache {
             UIView.transition(
                 with: self,
                 duration: transition.duration,

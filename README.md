@@ -78,6 +78,27 @@ UIKit gets the same renderer through `PaletteGraphicView` (`UIView`) — no
 `.makeImage(size:scale:)` on `PaletteGraphic` or `.snapshotImage(scale:)`
 on `PaletteGraphicView`.
 
+### Load asynchronously
+
+Skip the explicit `PaletteExtractor` step — `AsyncPaletteGraphic`
+extracts the palette internally and shows your placeholder while loading.
+
+```swift
+import PaletteKit
+import SwiftUI
+
+AsyncPaletteGraphic(image: .url(url)) {
+    Color.gray.opacity(0.1)   // shown during loading and on failure
+}
+.frame(width: 320, height: 320)
+.clipShape(RoundedRectangle(cornerRadius: 24))
+```
+
+UIKit pair: `AsyncPaletteGraphicView`. Both share a process-wide
+`PaletteCache.shared` (DI-friendly). See [Loading palettes
+asynchronously](https://swiftpackageindex.com/2dubu/palettekit/main/documentation/palettekit/asyncloading)
+for caching, transitions, and error handling.
+
 ## Features
 
 - **Async, Sendable, Swift 6 strict concurrency.** Every entry point is
@@ -116,7 +137,7 @@ on `PaletteGraphicView`.
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/2dubu/PaletteKit", from: "1.4.0"),
+    .package(url: "https://github.com/2dubu/PaletteKit", from: "1.5.0"),
 ]
 ```
 
@@ -266,6 +287,8 @@ don't need to run it.
 
 - **v1.3** ✅ shipped — SwiftUI ShapeStyle conformance + idiomatic UIKit integration.
 - **v1.4** ✅ shipped — `PaletteGraphic` + `PaletteGraphicView` palette-driven graphic primitives.
+- **v1.5** ✅ shipped — `AsyncPaletteGraphic` + `AsyncPaletteGraphicView` async-loading wrappers with `PaletteCache`.
+- **v1.6** — `PaletteMeshGraphic`: iOS 18+ multi-color mesh primitive (separate type).
 - **v2.0** — `observe()` (live video / camera) and `PaletteKitInsights` (FoundationModels captions, color naming, custom instructions on iOS 26+).
 
 Per-release notes live on [GitHub Releases](https://github.com/2dubu/PaletteKit/releases).

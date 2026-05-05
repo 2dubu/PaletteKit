@@ -63,6 +63,13 @@ compatible so outputs can be cross-verified against the reference.
 - ``SwatchMap``
 - ``SwatchRole``
 
+### Async loading
+- <doc:AsyncLoading>
+- ``AsyncPaletteGraphic``
+- ``AsyncPaletteGraphicView``
+- ``PaletteCache``
+- ``AsyncPaletteGraphicTransition``
+
 ### Color math
 - ``RGB``
 - ``HSL``

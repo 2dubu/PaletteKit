@@ -98,3 +98,18 @@ The renderer memoizes `CGImage` outputs in a bounded `NSCache`, so repeated
 body invalidations with the same configuration return instantly. First
 render at a new (configuration, size) pair takes approximately 10–30 ms
 on contemporary devices for a 1080×1080 surface.
+
+## Async loading
+
+For the common case of loading from a URL, use ``AsyncPaletteGraphic``
+(SwiftUI) or ``AsyncPaletteGraphicView`` (UIKit) to skip the explicit
+``PaletteExtractor`` step. See <doc:AsyncLoading> for details on caching,
+transitions, and error handling.
+
+```swift
+AsyncPaletteGraphic(image: .url(url)) {
+    Color.gray.opacity(0.1)
+}
+.frame(width: 320, height: 320)
+.clipShape(RoundedRectangle(cornerRadius: 24))
+```

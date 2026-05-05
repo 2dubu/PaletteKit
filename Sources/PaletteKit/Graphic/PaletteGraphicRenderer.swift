@@ -37,11 +37,14 @@ internal enum PaletteGraphicRenderer {
             return cached
         }
 
-        let cardPalette = CardPalette(palette: palette, swatches: swatches,
-                                      strategy: configuration.swatchStrategy)
+        let (center, edge) = resolveAnchors(
+            palette: palette, swatches: swatches,
+            strategy: configuration.swatchStrategy
+        )
         let stopColors = resolveStopColors(
             palette: palette, swatches: swatches,
-            cardPalette: cardPalette, count: configuration.colorCount.rawValue
+            center: center, edge: edge,
+            count: configuration.colorCount.rawValue
         )
         let extent = CGRect(origin: .zero, size: pixelSize)
 
@@ -64,17 +67,61 @@ internal enum PaletteGraphicRenderer {
         return cg
     }
 
+    /// Resolves the gradient `center` and `edge` anchors for a strategy via
+    /// the same fallback chain documented for ``SwatchStrategy``. Internal
+    /// — used by ``makeCGImage`` and exercised directly by renderer tests.
+    static func resolveAnchors(
+        palette: Palette,
+        swatches: SwatchMap?,
+        strategy: SwatchStrategy
+    ) -> (center: PaletteColor, edge: PaletteColor) {
+        let dominant = palette.dominant ?? .black
+        let darkest = palette.colors.min(by: { $0.luminance < $1.luminance }) ?? dominant
+        let lightest = palette.colors.max(by: { $0.luminance < $1.luminance }) ?? dominant
+
+        switch strategy {
+        case .vibrant:
+            return (
+                swatches?.vibrant?.color
+                    ?? swatches?.lightVibrant?.color
+                    ?? dominant,
+                swatches?.darkVibrant?.color
+                    ?? swatches?.darkMuted?.color
+                    ?? darkest
+            )
+        case .contrast:
+            return (
+                swatches?.lightVibrant?.color
+                    ?? swatches?.vibrant?.color
+                    ?? lightest,
+                swatches?.darkMuted?.color
+                    ?? swatches?.darkVibrant?.color
+                    ?? darkest
+            )
+        case .muted:
+            return (
+                swatches?.muted?.color
+                    ?? swatches?.lightMuted?.color
+                    ?? dominant,
+                swatches?.darkMuted?.color
+                    ?? swatches?.darkVibrant?.color
+                    ?? darkest
+            )
+        }
+    }
+
     /// Cumulative-bisection color stop resolution. Internal but accessed
     /// directly by tests, hence not `private`.
     static func resolveStopColors(
         palette: Palette,
         swatches: SwatchMap?,
-        cardPalette: CardPalette,
+        center: PaletteColor,
+        edge: PaletteColor,
         count: Int
     ) -> [PaletteColor] {
-        let firstBrighter = cardPalette.center.luminance >= cardPalette.edge.luminance
-        let first = firstBrighter ? cardPalette.center : cardPalette.edge
-        let last  = firstBrighter ? cardPalette.edge   : cardPalette.center
+        let firstBrighter = center.luminance >= edge.luminance
+        let first = firstBrighter ? center : edge
+        let last  = firstBrighter ? edge   : center
 
         if count <= 2 {
             return [first, last]

@@ -65,12 +65,61 @@ struct CardLabView: View {
         )
     }
 
-    private var cardPalette: CardPalette {
-        CardPalette(palette: palette, swatches: swatches, strategy: strategy)
+    /// Demo-only color set — center/edge gradient anchors plus
+    /// background/accent helpers used by the swatch chip bar and footer
+    /// label. Library consumers don't need this: ``PaletteGraphic`` resolves
+    /// `center`/`edge` internally. Replicated here purely so the lab can
+    /// surface every resolved color visually for inspection.
+    private struct ResolvedColors {
+        let center: PaletteColor
+        let edge: PaletteColor
+        let background: PaletteColor
+        let accent: PaletteColor
+
+        init(palette: Palette, swatches: SwatchMap?, strategy: SwatchStrategy) {
+            let dominant = palette.dominant ?? .black
+            let darkest = palette.colors.min(by: { $0.luminance < $1.luminance }) ?? dominant
+            let lightest = palette.colors.max(by: { $0.luminance < $1.luminance }) ?? dominant
+
+            switch strategy {
+            case .vibrant:
+                self.center = swatches?.vibrant?.color
+                    ?? swatches?.lightVibrant?.color
+                    ?? dominant
+                self.edge = swatches?.darkVibrant?.color
+                    ?? swatches?.darkMuted?.color
+                    ?? darkest
+            case .contrast:
+                self.center = swatches?.lightVibrant?.color
+                    ?? swatches?.vibrant?.color
+                    ?? lightest
+                self.edge = swatches?.darkMuted?.color
+                    ?? swatches?.darkVibrant?.color
+                    ?? darkest
+            case .muted:
+                self.center = swatches?.muted?.color
+                    ?? swatches?.lightMuted?.color
+                    ?? dominant
+                self.edge = swatches?.darkMuted?.color
+                    ?? swatches?.darkVibrant?.color
+                    ?? darkest
+            }
+
+            self.background = swatches?.lightMuted?.color
+                ?? swatches?.lightVibrant?.color
+                ?? lightest
+            self.accent = swatches?.darkVibrant?.color
+                ?? swatches?.vibrant?.color
+                ?? darkest
+        }
+    }
+
+    private var resolvedColors: ResolvedColors {
+        ResolvedColors(palette: palette, swatches: swatches, strategy: strategy)
     }
 
     var body: some View {
-        let cp = cardPalette
+        let cp = resolvedColors
         VStack(spacing: 12) {
             directionPicker
                 .padding(.horizontal, 16)
@@ -166,7 +215,7 @@ struct CardLabView: View {
     }
 
     @ViewBuilder
-    private func graphicArea(cp: CardPalette) -> some View {
+    private func graphicArea(cp: ResolvedColors) -> some View {
         let graphic = PaletteGraphic(palette: palette, swatches: swatches, configuration: configuration)
             .aspectRatio(1.0, contentMode: .fit)
 
@@ -180,7 +229,7 @@ struct CardLabView: View {
         .shadow(color: Color(cp.edge).opacity(0.18), radius: 18, x: 0, y: 12)
     }
 
-    private func swatchChipBar(cp: CardPalette) -> some View {
+    private func swatchChipBar(cp: ResolvedColors) -> some View {
         HStack(spacing: 8) {
             chip(label: "center", color: cp.center, cp: cp)
             chip(label: "edge", color: cp.edge, cp: cp)
@@ -189,7 +238,7 @@ struct CardLabView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    private func chip(label: String, color: PaletteColor, cp: CardPalette) -> some View {
+    private func chip(label: String, color: PaletteColor, cp: ResolvedColors) -> some View {
         VStack(spacing: 3) {
             RoundedRectangle(cornerRadius: 6)
                 .fill(Color(color))
@@ -207,7 +256,7 @@ struct CardLabView: View {
         }
     }
 
-    private func footerLabel(cp: CardPalette) -> some View {
+    private func footerLabel(cp: ResolvedColors) -> some View {
         VStack(spacing: 2) {
             Text("\(direction.rawValue) · \(strategy.rawValue) · \(grain.rawValue)")
                 .font(.system(.caption, design: .rounded, weight: .semibold))

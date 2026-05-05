@@ -185,4 +185,25 @@ struct AsyncPaletteGraphicLoaderTests {
         Issue.record("timed out waiting for .failure; final phase: \(loader.phase)")
     }
 }
+
+#if canImport(SwiftUI)
+import SwiftUI
+
+@Suite("AsyncPaletteGraphic smoke")
+struct AsyncPaletteGraphicSmokeTests {
+    @Test("can instantiate with default-placeholder convenience init")
+    func defaultInit() throws {
+        let url = URL(string: "https://example.com/x.jpg")!
+        _ = AsyncPaletteGraphic(image: .url(url))
+    }
+
+    @Test("can instantiate with explicit placeholder closure")
+    func explicitPlaceholder() throws {
+        let url = URL(string: "https://example.com/x.jpg")!
+        _ = AsyncPaletteGraphic(image: .url(url)) {
+            Color.gray.opacity(0.1)
+        }
+    }
+}
+#endif
 #endif

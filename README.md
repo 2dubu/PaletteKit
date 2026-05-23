@@ -288,7 +288,8 @@ don't need to run it.
 - **v1.3** ✅ shipped — SwiftUI ShapeStyle conformance + idiomatic UIKit integration.
 - **v1.4** ✅ shipped — `PaletteGraphic` + `PaletteGraphicView` palette-driven graphic primitives.
 - **v1.5** ✅ shipped — `AsyncPaletteGraphic` + `AsyncPaletteGraphicView` async-loading wrappers with `PaletteCache`.
-- **v1.6** — `PaletteMeshGraphic` (iOS 18+ multi-color mesh primitive) + `SwatchMap` ergonomics (`titleTextColor(for:fallback:)` etc., eliminating `??` chain boilerplate).
+- **v1.6** ✅ shipped — `PaletteMeshGraphic` (iOS 18+ multi-color mesh primitive on top of SwiftUI's native `MeshGradient`).
+- **v1.7** — `SwatchMap` ergonomics (`titleTextColor(for:fallback:)` etc., eliminating `??` chain boilerplate).
 - **v2.0** — `observe()`: live video / camera frame stream → `AsyncStream<Palette>`.
 - **v2.1** — `PaletteKitInsights`: FoundationModels captions, color naming, custom instructions on iOS 26+ (separate optional module).
 

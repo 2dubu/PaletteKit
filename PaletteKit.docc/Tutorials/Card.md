@@ -113,3 +113,37 @@ AsyncPaletteGraphic(image: .url(url)) {
 .frame(width: 320, height: 320)
 .clipShape(RoundedRectangle(cornerRadius: 24))
 ```
+
+## Mesh gradient (iOS 18+)
+
+For a softer, multi-directional gradient, use ``PaletteMeshGraphic``. It is
+a SwiftUI primitive built on top of Apple's native `MeshGradient` (iOS 18+):
+
+```swift
+PaletteMeshGraphic(palette: palette)
+    .frame(width: 320, height: 320)
+    .clipShape(RoundedRectangle(cornerRadius: 24))
+```
+
+Unlike ``PaletteGraphic``, ``PaletteMeshGraphic`` does **not** take a
+``SwatchMap`` — it allocates slots proportional to each palette color's
+population, so the mesh inherits the source photo's color dominance
+directly. Callers who only need a mesh can skip the extra
+`extractor.swatches(from:)` call.
+
+Tune the result with ``PaletteMeshGraphic/Configuration``:
+
+- ``PaletteMeshGraphic/GridSize`` — `.compact` (2×2), `.standard` (3×3,
+  default), `.rich` (4×4). Larger grids read smoother but need a more
+  color-diverse palette.
+
+For a static `UIImage` (sharing, caching), call
+``PaletteMeshGraphic/makeImage(size:scale:)``:
+
+```swift
+let image: UIImage? = PaletteMeshGraphic(palette: palette)
+    .makeImage(size: CGSize(width: 1080, height: 1080))
+```
+
+> Tip: ``PaletteMeshGraphic/makeImage(size:scale:)`` must be called from
+> the main actor (it uses SwiftUI's `ImageRenderer`).

@@ -198,6 +198,7 @@ struct AsyncPaletteGraphicLoaderTests {
 import SwiftUI
 
 @Suite("AsyncPaletteGraphic smoke")
+@MainActor
 struct AsyncPaletteGraphicSmokeTests {
     @Test("can instantiate with default-placeholder convenience init")
     func defaultInit() throws {

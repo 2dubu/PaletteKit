@@ -21,6 +21,7 @@ struct PaletteMeshGraphicViewTests {
     )
 
     @Test("stores palette, configuration as passed")
+    @MainActor
     @available(iOS 18.0, *)
     func initStoresInputs() {
         let cfg = PaletteMeshGraphic.Configuration(gridSize: .rich)

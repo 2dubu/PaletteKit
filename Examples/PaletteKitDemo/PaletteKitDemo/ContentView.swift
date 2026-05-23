@@ -119,6 +119,10 @@ struct ContentView: View {
                 if let palette, !palette.isEmpty {
                     cardEntry(palette: palette)
                 }
+
+                if #available(iOS 18.0, *), let palette, !palette.isEmpty {
+                    meshEntry(palette: palette)
+                }
             }
         }
     }
@@ -131,6 +135,26 @@ struct ContentView: View {
             HStack {
                 Image(systemName: "wand.and.rays")
                 Text("Generate Graphic")
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding()
+            .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+
+    @available(iOS 18.0, *)
+    @ViewBuilder
+    private func meshEntry(palette: Palette) -> some View {
+        NavigationLink {
+            MeshLabView(palette: palette)
+        } label: {
+            HStack {
+                Image(systemName: "circle.grid.3x3.fill")
+                Text("Generate Mesh")
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.footnote)

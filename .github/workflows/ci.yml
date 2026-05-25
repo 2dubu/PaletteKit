@@ -38,3 +38,31 @@ jobs:
 
       - name: Test (PaletteKitTests only — benchmarks opt-in)
         run: swift test --filter PaletteKitTests
+
+  ios-test:
+    name: iOS Simulator Tests
+    runs-on: macos-15
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest Xcode 16+
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$XCODE" ]; then
+            echo "No Xcode 16 installation found. Available:"
+            ls /Applications | grep -i xcode || true
+            exit 1
+          fi
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: List installed iOS runtimes
+        run: xcrun simctl list runtimes | grep iOS || true
+
+      - name: Test on iOS Simulator
+        run: |
+          xcodebuild test \
+            -scheme PaletteKit \
+            -destination 'platform=iOS Simulator,name=iPhone 16'

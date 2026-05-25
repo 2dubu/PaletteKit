@@ -9,7 +9,7 @@ import UIKit
 /// (SwiftUI) and ``PaletteGraphicView`` (UIKit). Pixel-equivalent output
 /// across both consumers.
 internal enum PaletteGraphicRenderer {
-    static let context = CIContext(options: [.useSoftwareRenderer: false])
+    nonisolated(unsafe) private static let context = CIContext(options: [.useSoftwareRenderer: false])
 
     /// Memoizes the rendered `CGImage` keyed by (palette signature +
     /// configuration + pixel size). Memory-pressure safe via `NSCache`;

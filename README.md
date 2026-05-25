@@ -38,7 +38,7 @@ Rectangle()
     .fill(palette.dominant ?? .black)
 
 Text("Hello")
-    .foregroundStyle(swatches.vibrant?.titleTextColor ?? .black)
+    .foregroundStyle(swatches.titleTextColor(for: .vibrant, fallback: .black))
 ```
 
 ### UIKit
@@ -52,7 +52,7 @@ let palette = try await extractor.palette(from: .data(imageData))
 let swatches = try await extractor.swatches(from: .data(imageData))
 
 view.backgroundColor = UIColor(palette.dominant ?? .black)
-label.textColor = UIColor(swatches.vibrant?.titleTextColor ?? .black)
+label.textColor = UIColor(swatches.titleTextColor(for: .vibrant, fallback: .black))
 ```
 
 ### Generate a graphic

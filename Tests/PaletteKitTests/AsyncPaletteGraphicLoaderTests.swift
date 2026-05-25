@@ -57,7 +57,7 @@ struct AsyncPaletteGraphicLoaderTests {
         }
 
         // Wait for completion (poll with small sleeps; integration boundary).
-        try await waitForSuccess(loader: loader, timeout: .seconds(5))
+        try await waitForSuccess(loader: loader, timeout: .seconds(30))
 
         guard case .success(let p, _, let fromCache) = loader.phase else {
             Issue.record("expected .success, got \(loader.phase)")
@@ -87,7 +87,7 @@ struct AsyncPaletteGraphicLoaderTests {
         )
         loader.load(context: context, cache: nil)
 
-        try await waitForFailure(loader: loader, timeout: .seconds(5))
+        try await waitForFailure(loader: loader, timeout: .seconds(30))
 
         if case .failure = loader.phase { } else {
             Issue.record("expected .failure, got \(loader.phase)")

@@ -38,7 +38,7 @@ Rectangle()
     .fill(palette.dominant ?? .black)
 
 Text("Hello")
-    .foregroundStyle(swatches.vibrant?.titleTextColor ?? .black)
+    .foregroundStyle(swatches.titleTextColor(for: .vibrant, fallback: .black))
 ```
 
 ### UIKit
@@ -52,7 +52,7 @@ let palette = try await extractor.palette(from: .data(imageData))
 let swatches = try await extractor.swatches(from: .data(imageData))
 
 view.backgroundColor = UIColor(palette.dominant ?? .black)
-label.textColor = UIColor(swatches.vibrant?.titleTextColor ?? .black)
+label.textColor = UIColor(swatches.titleTextColor(for: .vibrant, fallback: .black))
 ```
 
 ### Generate a graphic
@@ -289,7 +289,7 @@ don't need to run it.
 - **v1.4** ✅ shipped — `PaletteGraphic` + `PaletteGraphicView` palette-driven graphic primitives.
 - **v1.5** ✅ shipped — `AsyncPaletteGraphic` + `AsyncPaletteGraphicView` async-loading wrappers with `PaletteCache`.
 - **v1.6** ✅ shipped — `PaletteMeshGraphic` (iOS 18+ multi-color mesh primitive on top of SwiftUI's native `MeshGradient`).
-- **v1.7** — `SwatchMap` ergonomics (`titleTextColor(for:fallback:)` etc., eliminating `??` chain boilerplate).
+- **v1.7** ✅ shipped — `SwatchMap` ergonomics (`color/titleTextColor/bodyTextColor(for:fallback:)` on both `SwatchMap` and `Optional<SwatchMap>`).
 - **v2.0** — `observe()`: live video / camera frame stream → `AsyncStream<Palette>`.
 - **v2.1** — `PaletteKitInsights`: FoundationModels captions, color naming, custom instructions on iOS 26+ (separate optional module).
 

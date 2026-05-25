@@ -2,6 +2,18 @@
 
 All notable changes to PaletteKit are documented here.
 
+## 1.7.0
+
+### Added
+- Convenience lookups on `SwatchMap` for the common `<role>?.color /
+  textColor ?? fallback` pattern.
+  - `color(for:fallback:)`
+  - `titleTextColor(for:fallback:)`
+  - `bodyTextColor(for:fallback:)`
+- The same convenience on `Optional<SwatchMap>` so callers holding a
+  `SwatchMap?` (e.g. `PaletteGraphic.swatches`) can skip an extra
+  unwrap.
+
 ## 1.6.0
 
 ### Added

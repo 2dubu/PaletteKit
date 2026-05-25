@@ -84,4 +84,46 @@ struct SwatchMapLookupTests {
         #expect(result.rgb == RGB(r: 255, g: 255, b: 255))
     }
 }
+
+@Suite("Optional<SwatchMap> convenience overloads")
+struct OptionalSwatchMapLookupTests {
+    private static func makeSwatch(role: SwatchRole,
+                                   r: UInt8, g: UInt8, b: UInt8) -> Swatch {
+        let color = PaletteColor(r: r, g: g, b: b)
+        return Swatch(
+            color: color,
+            role: role,
+            titleTextColor: .white,
+            bodyTextColor: .black
+        )
+    }
+
+    private static func mapWithVibrantOnly() -> SwatchMap {
+        SwatchMap(vibrant: makeSwatch(role: .vibrant, r: 200, g: 80, b: 40))
+    }
+
+    @Test("nil SwatchMap returns fallback for every property")
+    func nilMap() {
+        let map: SwatchMap? = nil
+        #expect(map.color(for: .vibrant, fallback: .black).rgb == RGB(r: 0, g: 0, b: 0))
+        #expect(map.titleTextColor(for: .vibrant, fallback: .black).rgb == RGB(r: 0, g: 0, b: 0))
+        #expect(map.bodyTextColor(for: .vibrant, fallback: .white).rgb == RGB(r: 255, g: 255, b: 255))
+    }
+
+    @Test("non-nil SwatchMap with absent role returns fallback")
+    func absentRole() {
+        let map: SwatchMap? = Self.mapWithVibrantOnly()
+        #expect(map.color(for: .muted, fallback: .black).rgb == RGB(r: 0, g: 0, b: 0))
+        #expect(map.titleTextColor(for: .darkMuted, fallback: .black).rgb == RGB(r: 0, g: 0, b: 0))
+        #expect(map.bodyTextColor(for: .lightVibrant, fallback: .white).rgb == RGB(r: 255, g: 255, b: 255))
+    }
+
+    @Test("non-nil SwatchMap with present role returns swatch property")
+    func presentRole() {
+        let map: SwatchMap? = Self.mapWithVibrantOnly()
+        #expect(map.color(for: .vibrant, fallback: .black).rgb == RGB(r: 200, g: 80, b: 40))
+        #expect(map.titleTextColor(for: .vibrant, fallback: .black).rgb == RGB(r: 255, g: 255, b: 255))
+        #expect(map.bodyTextColor(for: .vibrant, fallback: .white).rgb == RGB(r: 0, g: 0, b: 0))
+    }
+}
 #endif

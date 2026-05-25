@@ -100,6 +100,28 @@ if let vibrant = swatches.vibrant {
 layer.backgroundColor = palette.dominant?.cgColor
 ```
 
+### Convenience lookups
+
+For the common `<role>?.color/textColor ?? fallback` pattern, `SwatchMap`
+exposes three helpers:
+
+```swift
+let titleColor = swatches.titleTextColor(for: .vibrant, fallback: .black)
+let bodyColor  = swatches.bodyTextColor(for: .muted,   fallback: .black)
+let accent     = swatches.color(for: .lightVibrant,    fallback: palette.dominant ?? .black)
+```
+
+The same calls work on `SwatchMap?` (e.g. `PaletteGraphic.swatches`), so
+optional callsites do not need an extra unwrap:
+
+```swift
+// SwatchMap? — no extra `?` required
+let textColor = swatches.titleTextColor(for: .vibrant, fallback: .black)
+```
+
+The existing `if let vibrant = swatches.vibrant { … }` pattern continues
+to work; pick whichever reads better at the callsite.
+
 ## Next steps
 
 - See <doc:Options> for fine-grained control over quality, color count,

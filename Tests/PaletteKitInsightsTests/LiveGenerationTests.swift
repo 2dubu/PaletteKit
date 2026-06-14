@@ -6,7 +6,10 @@ import Testing
 @Suite("PaletteKitInsights live")
 struct LiveGenerationTests {
     /// Only runs where Apple Intelligence is available; skipped otherwise so CI stays green.
-    @Test(.enabled(if: PaletteInsightsGenerator().isAvailable))
+    @Test(.enabled(if: {
+        guard #available(iOS 26, macOS 26, visionOS 26, *) else { return false }
+        return PaletteInsightsGenerator().isAvailable
+    }()))
     @available(iOS 26, macOS 26, visionOS 26, *)
     func generatesNameAndSummary() async throws {
         let generator = PaletteInsightsGenerator()

@@ -3,7 +3,7 @@ import Testing
 @testable import PaletteKit
 @testable import PaletteKitInsights
 
-@Suite("InsightsPrompt.prompt")
+@Suite("InsightsPrompt")
 struct InsightsPromptTests {
     private func palette(_ colors: [PaletteColor]) -> Palette {
         Palette(colors: colors, colorSpaceUsed: .sRGB)

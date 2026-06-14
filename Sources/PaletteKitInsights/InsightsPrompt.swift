@@ -17,17 +17,17 @@ enum InsightsPrompt {
         return text
     }
 
-    /// English display name of the locale's language (instructions are written in English).
+    /// English display name of the locale's language, resolved against the en_US locale.
     static func languageDisplayName(for locale: Locale) -> String {
         let english = Locale(identifier: "en_US")
         if let code = locale.language.languageCode?.identifier,
            let name = english.localizedString(forLanguageCode: code) {
             return name
         }
-        return locale.identifier
+        return locale.language.languageCode?.identifier ?? "English"
     }
 
-    /// Trusted, library-owned instructions (English). Locale sets the output language.
+    /// System instructions string in English; the locale sets the model's output language.
     static func instructionsText(for locale: Locale) -> String {
         let language = languageDisplayName(for: locale)
         return """

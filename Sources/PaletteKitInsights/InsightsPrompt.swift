@@ -1,8 +1,7 @@
 import Foundation
 import PaletteKit
 
-/// Pure builders for the model's trusted instructions and untrusted prompt.
-/// Returning `String` (not `Instructions`) keeps these unit-testable without the model.
+/// Builds the prompt string sent to the on-device model.
 enum InsightsPrompt {
     /// Untrusted prompt: serialized palette + optional caller guidance.
     static func prompt(for palette: Palette, guidance: String?) -> String {

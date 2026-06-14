@@ -18,7 +18,8 @@ public struct PaletteInsightsGenerator: Sendable {
         return false
     }
 
-    /// Whether the model supports the locale's language. Defaults to `.current`.
+    /// Whether the model supports the locale's language.
+    /// - Parameter locale: Language to test. Defaults to the device locale.
     public func supportsLocale(_ locale: Locale = .current) -> Bool {
         SystemLanguageModel.default.supportsLocale(locale)
     }
@@ -27,6 +28,9 @@ public struct PaletteInsightsGenerator: Sendable {
     /// - Parameters:
     ///   - locale: output language (default device/app language).
     ///   - guidance: optional caller tone or style hint.
+    /// - Throws: ``PaletteInsightsError`` — `.emptyPalette` for an empty palette,
+    ///   `.modelUnavailable` / `.unsupportedLanguage` when the model can't be used,
+    ///   or `.guardrailViolation` / `.refusal` / `.generationFailed` from generation.
     public func insights(
         for palette: Palette,
         locale: Locale = .current,

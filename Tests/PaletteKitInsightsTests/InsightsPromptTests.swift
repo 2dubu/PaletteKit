@@ -40,4 +40,22 @@ struct InsightsPromptTests {
         #expect(!InsightsPrompt.prompt(for: p, guidance: nil).contains("Additional guidance"))
         #expect(!InsightsPrompt.prompt(for: p, guidance: "   ").contains("Additional guidance"))
     }
+
+    @Test("language display name resolves from locale")
+    @available(iOS 26, macOS 26, visionOS 26, *)
+    func language() {
+        #expect(InsightsPrompt.languageDisplayName(for: Locale(identifier: "ko_KR")) == "Korean")
+        #expect(InsightsPrompt.languageDisplayName(for: Locale(identifier: "ja_JP")) == "Japanese")
+    }
+
+    @Test("instructions carry role, hard rules, few-shot, and language directive")
+    @available(iOS 26, macOS 26, visionOS 26, *)
+    func instructions() {
+        let text = InsightsPrompt.instructionsText(for: Locale(identifier: "ko_KR"))
+        #expect(text.contains("You are a curator"))
+        #expect(text.contains("MUST be 2 to 3 words"))
+        #expect(text.contains("single sentence"))
+        #expect(text.contains("Ember Harvest"))            // few-shot example present
+        #expect(text.contains("You MUST respond in Korean"))
+    }
 }

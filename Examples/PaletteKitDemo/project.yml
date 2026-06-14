@@ -27,6 +27,8 @@ targets:
       - path: PaletteKitDemo
     dependencies:
       - package: PaletteKit
+      - package: PaletteKit
+        product: PaletteKitInsights
     info:
       path: PaletteKitDemo/Info.plist
       properties:

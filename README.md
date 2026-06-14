@@ -22,6 +22,15 @@ async-only Sendable API.
   <em>Demo app: palette extraction → PaletteGraphic, on two different photos</em>
 </p>
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/1871e261-3020-493a-8f53-b4efb8e37461" width="23%" alt="Demo: palette extraction (photo 3)" />
+  <img src="https://github.com/user-attachments/assets/924c5e91-26cc-4b47-ba60-232ee4892168" width="23%" alt="Demo: PaletteGraphic Lab (photo 3)" />
+  <img src="https://github.com/user-attachments/assets/062b0f1a-c86c-46d6-afae-4db00fc57c5b" width="23%" alt="Demo: PaletteGraphic Lab (photo 3)" />
+</p>
+<p align="center">
+  <em>Demo app: palette extraction → MeshGraphic & AnimatedGraphic</em>
+</p>
+
 ## Quick start
 
 ### SwiftUI

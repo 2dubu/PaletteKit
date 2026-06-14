@@ -14,11 +14,10 @@ let package = Package(
             name: "PaletteKit",
             targets: ["PaletteKit"]
         ),
-        // Uncomment when v2 Insights module lands (requires iOS 26+).
-        // .library(
-        //     name: "PaletteKitInsights",
-        //     targets: ["PaletteKitInsights"]
-        // ),
+        .library(
+            name: "PaletteKitInsights",
+            targets: ["PaletteKitInsights"]
+        ),
     ],
     targets: [
         .target(
@@ -33,10 +32,27 @@ let package = Package(
                 .enableUpcomingFeature("ExistentialAny"),
             ]
         ),
+        .target(
+            name: "PaletteKitInsights",
+            dependencies: ["PaletteKit"],
+            path: "Sources/PaletteKitInsights",
+            swiftSettings: [
+                .swiftLanguageMode(.v6),
+                .enableUpcomingFeature("ExistentialAny"),
+            ]
+        ),
         .testTarget(
             name: "PaletteKitTests",
             dependencies: ["PaletteKit"],
             path: "Tests/PaletteKitTests",
+            swiftSettings: [
+                .swiftLanguageMode(.v6),
+            ]
+        ),
+        .testTarget(
+            name: "PaletteKitInsightsTests",
+            dependencies: ["PaletteKitInsights"],
+            path: "Tests/PaletteKitInsightsTests",
             swiftSettings: [
                 .swiftLanguageMode(.v6),
             ]

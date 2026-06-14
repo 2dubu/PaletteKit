@@ -99,6 +99,28 @@ UIKit pair: `AsyncPaletteGraphicView`. Both share a process-wide
 asynchronously](https://swiftpackageindex.com/2dubu/palettekit/main/documentation/palettekit/asyncloading)
 for caching, transitions, and error handling.
 
+### Animate a graphic
+
+`AnimatedPaletteGraphic` renders the palette as a slowly morphing "living
+gradient" — a multi-point, LAB-blended flow with organic, non-periodic motion.
+It fills its frame; clip to any shape.
+
+```swift
+AnimatedPaletteGraphic(
+    palette: palette,
+    configuration: .init(
+        colorCount: .three,   // .two ... .five
+        speed: .regular,      // .slow / .regular / .fast
+        isAnimated: true
+    )
+)
+.frame(width: 320, height: 420)
+.clipShape(RoundedRectangle(cornerRadius: 24))
+```
+
+UIKit pair: `AnimatedPaletteGraphicView`. Both honor Reduce Motion and Low
+Power Mode (hold a static frame) and pause while off-screen.
+
 ## Features
 
 - **Async, Sendable, Swift 6 strict concurrency.** Every entry point is
@@ -290,7 +312,7 @@ don't need to run it.
 - **v1.5** ✅ shipped — `AsyncPaletteGraphic` + `AsyncPaletteGraphicView` async-loading wrappers with `PaletteCache`.
 - **v1.6** ✅ shipped — `PaletteMeshGraphic` (iOS 18+ multi-color mesh primitive on top of SwiftUI's native `MeshGradient`).
 - **v1.7** ✅ shipped — `SwatchMap` ergonomics (`color/titleTextColor/bodyTextColor(for:fallback:)` on both `SwatchMap` and `Optional<SwatchMap>`).
-- **v2.0** — `observe()`: live video / camera frame stream → `AsyncStream<Palette>`.
+- **v2.0** ✅ shipped — `AnimatedPaletteGraphic` + `AnimatedPaletteGraphicView`: animated, LAB-blended "living gradient" from an extracted palette.
 - **v2.1** — `PaletteKitInsights`: FoundationModels captions, color naming, custom instructions on iOS 26+ (separate optional module).
 
 Per-release notes live on [GitHub Releases](https://github.com/2dubu/PaletteKit/releases).

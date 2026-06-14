@@ -124,16 +124,6 @@ extension PaletteGraphic {
     }
 }
 
-/// Number of distinct colors used along a ``PaletteGraphic`` gradient.
-public enum ColorCount: Int, CaseIterable, Identifiable, Sendable {
-    case two   = 2
-    case three = 3
-    case four  = 4
-    case five  = 5
-
-    public var id: Int { rawValue }
-}
-
 /// How a ``PaletteGraphic`` flows its color stops across the bounds.
 public enum GradientDirection: String, CaseIterable, Identifiable, Sendable {
     /// Diagonal flow from `linearStart` to `linearEnd`. Default anchors

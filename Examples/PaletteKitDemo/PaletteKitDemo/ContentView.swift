@@ -123,6 +123,10 @@ struct ContentView: View {
                 if #available(iOS 18.0, *), let palette, !palette.isEmpty {
                     meshEntry(palette: palette)
                 }
+
+                if let palette, !palette.isEmpty {
+                    animatedEntry(palette: palette)
+                }
             }
         }
     }
@@ -146,6 +150,25 @@ struct ContentView: View {
         .buttonStyle(.plain)
     }
 
+    @ViewBuilder
+    private func animatedEntry(palette: Palette) -> some View {
+        NavigationLink {
+            AnimatedLabView(palette: palette)
+        } label: {
+            HStack {
+                Image(systemName: "sparkles")
+                Text("Animate Graphic")
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding()
+            .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+
     @available(iOS 18.0, *)
     @ViewBuilder
     private func meshEntry(palette: Palette) -> some View {
@@ -154,7 +177,7 @@ struct ContentView: View {
         } label: {
             HStack {
                 Image(systemName: "circle.grid.3x3.fill")
-                Text("Generate Mesh")
+                Text("Generate Mesh Graphic")
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.footnote)

@@ -11,5 +11,7 @@ struct PaletteInsightsTests {
         #expect(a == b)
         #expect(a.name == "Ember Harvest")
         #expect(a.summary == "Warm and golden.")
+        let different = PaletteInsights(name: "Ember Harvest", summary: "Cool and blue.")
+        #expect(a != different)
     }
 }

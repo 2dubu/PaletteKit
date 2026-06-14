@@ -2,6 +2,23 @@
 
 All notable changes to PaletteKit are documented here.
 
+## 2.0.0
+
+### Added
+- `AnimatedPaletteGraphic` (SwiftUI) and `AnimatedPaletteGraphicView` (UIKit)
+  — an animated "living gradient" that renders a `Palette` as a multi-point,
+  LAB-blended flow with organic, non-periodic (spring-driven) motion.
+  - `Configuration`: `colorCount` (`.two`…`.five`), `speed`
+    (`FlowSpeed`: `.slow` / `.regular` / `.fast`), `isAnimated`.
+  - Honors Reduce Motion and Low Power Mode (holds a static frame) and
+    pauses while off-screen.
+  - SwiftUI and UIKit share one inline-source Metal renderer (no `.metallib`
+    resource bundle); the SwiftUI view wraps the UIKit view.
+
+### Changed
+- `ColorCount` moved to its own file so it is shared by `PaletteGraphic` and
+  `AnimatedPaletteGraphic`. No API change.
+
 ## 1.7.0
 
 ### Added

@@ -46,11 +46,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select latest Xcode
+      - name: Select latest Xcode 16 (core iOS suite)
         run: |
-          XCODE=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1)
+          XCODE=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -n 1)
           if [ -z "$XCODE" ]; then
-            echo "No Xcode installation found. Available:"
+            echo "No Xcode 16 installation found. Available:"
             ls /Applications | grep -i xcode || true
             exit 1
           fi

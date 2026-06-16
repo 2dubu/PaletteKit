@@ -338,18 +338,6 @@ don't need to run it.
 - Xcode 16+
 - Swift 6.0 (strict concurrency)
 
-## Roadmap
-
-- **v1.3** ✅ shipped — SwiftUI ShapeStyle conformance + idiomatic UIKit integration.
-- **v1.4** ✅ shipped — `PaletteGraphic` + `PaletteGraphicView` palette-driven graphic primitives.
-- **v1.5** ✅ shipped — `AsyncPaletteGraphic` + `AsyncPaletteGraphicView` async-loading wrappers with `PaletteCache`.
-- **v1.6** ✅ shipped — `PaletteMeshGraphic` (iOS 18+ multi-color mesh primitive on top of SwiftUI's native `MeshGradient`).
-- **v1.7** ✅ shipped — `SwatchMap` ergonomics (`color/titleTextColor/bodyTextColor(for:fallback:)` on both `SwatchMap` and `Optional<SwatchMap>`).
-- **v2.0** ✅ shipped — `AnimatedPaletteGraphic` + `AnimatedPaletteGraphicView`: animated, LAB-blended "living gradient" from an extracted palette.
-- **v2.1** ✅ shipped — `PaletteKitInsights`: on-device FoundationModels palette naming + one-line summary with caller guidance and locale-aware output (iOS 26+, macOS 26+, visionOS 26+, separate optional module).
-
-Per-release notes live on [GitHub Releases](https://github.com/2dubu/PaletteKit/releases).
-
 ## Acknowledgements
 
 Thanks to [color-thief](https://github.com/lokesh/color-thief) by

@@ -130,6 +130,30 @@ AnimatedPaletteGraphic(
 UIKit pair: `AnimatedPaletteGraphicView`. Both honor Reduce Motion and Low
 Power Mode (hold a static frame) and pause while off-screen.
 
+### Generate insights
+
+`PaletteInsightsGenerator` (iOS 26+, macOS 26+, visionOS 26+, `PaletteKitInsights` module) names a
+palette and writes a one-line summary using the on-device FoundationModels
+language model — no network calls. Add the `PaletteKitInsights` product to
+your target, then:
+
+```swift
+import PaletteKit
+import PaletteKitInsights
+
+let palette = try await PaletteExtractor().palette(from: image)
+let generator = PaletteInsightsGenerator()
+
+guard generator.isAvailable, generator.supportsLocale() else { return }   // fallback otherwise
+
+let insights = try await generator.insights(
+    for: palette,
+    guidance: "warm and nostalgic"   // optional
+)
+print(insights.name)      // e.g. "Faded Coastline"
+print(insights.summary)   // one sentence, in the device language
+```
+
 ## Features
 
 - **Async, Sendable, Swift 6 strict concurrency.** Every entry point is
@@ -322,7 +346,7 @@ don't need to run it.
 - **v1.6** ✅ shipped — `PaletteMeshGraphic` (iOS 18+ multi-color mesh primitive on top of SwiftUI's native `MeshGradient`).
 - **v1.7** ✅ shipped — `SwatchMap` ergonomics (`color/titleTextColor/bodyTextColor(for:fallback:)` on both `SwatchMap` and `Optional<SwatchMap>`).
 - **v2.0** ✅ shipped — `AnimatedPaletteGraphic` + `AnimatedPaletteGraphicView`: animated, LAB-blended "living gradient" from an extracted palette.
-- **v2.1** — `PaletteKitInsights`: FoundationModels captions, color naming, custom instructions on iOS 26+ (separate optional module).
+- **v2.1** ✅ shipped — `PaletteKitInsights`: on-device FoundationModels palette naming + one-line summary with caller guidance and locale-aware output (iOS 26+, macOS 26+, visionOS 26+, separate optional module).
 
 Per-release notes live on [GitHub Releases](https://github.com/2dubu/PaletteKit/releases).
 

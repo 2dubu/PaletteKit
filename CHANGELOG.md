@@ -2,6 +2,12 @@
 
 All notable changes to PaletteKit are documented here.
 
+## 2.1.0
+
+### Added
+- `PaletteKitInsights` (iOS 26+ / macOS 26+ / visionOS 26+, separate optional product): `PaletteInsightsGenerator` produces a `PaletteInsights` (`name` + `summary`) from a `Palette` via on-device FoundationModels, with optional caller `guidance` and locale-aware output.
+- `PaletteInsightsError` for availability, unsupported-language, and generation failures.
+
 ## 2.0.0
 
 ### Added

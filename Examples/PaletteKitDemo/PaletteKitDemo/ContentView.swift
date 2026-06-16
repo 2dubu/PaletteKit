@@ -127,6 +127,10 @@ struct ContentView: View {
                 if let palette, !palette.isEmpty {
                     animatedEntry(palette: palette)
                 }
+
+                if #available(iOS 26, *), let palette, !palette.isEmpty {
+                    insightsEntry(palette: palette)
+                }
             }
         }
     }
@@ -178,6 +182,26 @@ struct ContentView: View {
             HStack {
                 Image(systemName: "circle.grid.3x3.fill")
                 Text("Generate Mesh Graphic")
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding()
+            .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+
+    @available(iOS 26, *)
+    @ViewBuilder
+    private func insightsEntry(palette: Palette) -> some View {
+        NavigationLink {
+            InsightsLabView(palette: palette)
+        } label: {
+            HStack {
+                Image(systemName: "text.bubble")
+                Text("Generate Insights")
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.footnote)

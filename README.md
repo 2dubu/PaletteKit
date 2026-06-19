@@ -31,6 +31,18 @@ async-only Sendable API.
   <em>Demo app: palette extraction → MeshGraphic & AnimatedGraphic</em>
 </p>
 
+## Install
+
+```swift
+// Package.swift
+dependencies: [
+    .package(url: "https://github.com/2dubu/PaletteKit", from: "2.1.0"),
+]
+```
+
+Minimum iOS 17 · Swift 6.0 · Xcode 16+. For on-device naming and summaries,
+also add the optional `PaletteKitInsights` product (iOS 26+).
+
 ## Quick start
 
 ### SwiftUI
@@ -82,15 +94,14 @@ PaletteGraphic(palette: palette, swatches: swatches, configuration: configuratio
     .clipShape(RoundedRectangle(cornerRadius: 24))
 ```
 
-UIKit gets the same renderer through `PaletteGraphicView` (`UIView`) — no
-`UIHostingController` wrapper. For a static `UIImage`, call
-`.makeImage(size:scale:)` on `PaletteGraphic` or `.snapshotImage(scale:)`
-on `PaletteGraphicView`.
+UIKit: `PaletteGraphicView` (`UIView`, no `UIHostingController`). For a static
+`UIImage`, use `PaletteGraphic.makeImage(size:scale:)` or
+`PaletteGraphicView.snapshotImage(scale:)`.
 
 ### Load asynchronously
 
-Skip the explicit `PaletteExtractor` step — `AsyncPaletteGraphic`
-extracts the palette internally and shows your placeholder while loading.
+`AsyncPaletteGraphic` extracts the palette internally and shows your
+placeholder while loading — no explicit `PaletteExtractor` step.
 
 ```swift
 import PaletteKit
@@ -104,7 +115,7 @@ AsyncPaletteGraphic(image: .url(url)) {
 ```
 
 UIKit pair: `AsyncPaletteGraphicView`. Both share a process-wide
-`PaletteCache.shared` (DI-friendly). See [Loading palettes
+`PaletteCache.shared`. See [Loading palettes
 asynchronously](https://swiftpackageindex.com/2dubu/palettekit/main/documentation/palettekit/asyncloading)
 for caching, transitions, and error handling.
 
@@ -132,10 +143,9 @@ Power Mode (hold a static frame) and pause while off-screen.
 
 ### Generate insights
 
-`PaletteInsightsGenerator` (iOS 26+, macOS 26+, visionOS 26+, `PaletteKitInsights` module) names a
-palette and writes a one-line summary using the on-device FoundationModels
-language model — no network calls. Add the `PaletteKitInsights` product to
-your target, then:
+`PaletteInsightsGenerator` (iOS 26+, `PaletteKitInsights` module) names a
+palette and writes a one-line summary with the on-device FoundationModels
+model — no network. With the product added:
 
 ```swift
 import PaletteKit
@@ -158,45 +168,30 @@ print(insights.summary)   // one sentence, in the device language
 
 - **Async, Sendable, Swift 6 strict concurrency.** Every entry point is
   `async throws`. `PaletteExtractor` is a value type — one per call site
-  or share freely across actors.
+  or shared across actors.
 - **Palette-driven graphic primitive.** `PaletteGraphic` (SwiftUI) and
-  `PaletteGraphicView` (UIKit) render gradient + grain artwork from any
-  extracted palette. Pixel-equivalent across platforms via a shared Core
-  Image / Core Graphics renderer; `NSCache`-memoized so repeated SwiftUI
-  body invalidations return instantly. Configurable along four orthogonal
-  axes (direction, color count, swatch strategy, grain).
+  `PaletteGraphicView` (UIKit) render gradient + grain artwork from any palette
+  via a shared Core Image / Core Graphics renderer — pixel-equivalent across
+  platforms, `NSCache`-memoized, configurable along four axes (direction, color
+  count, swatch strategy, grain).
 - **Rich `PaletteColor`.** hex, HSL, OKLCH, contrast, `isDark`/`isLight`, and
-  ShapeStyle conformance so it slots into any SwiftUI fill / foreground /
-  background modifier directly.
+  ShapeStyle conformance for direct use in any SwiftUI fill / foreground /
+  background modifier.
 - **OKLCH perceptual quantization by default.** Palettes feel evenly
-  spaced to the human eye, not evenly spaced in sRGB.
+  spaced to the eye, not in sRGB.
 - **Display P3 native.** iPhone photos keep their chroma instead of
-  being clipped to sRGB.
-- **CPU by default, Metal opt-in.** `MmcqQuantizer` (CPU, Accelerate)
-  is the default and what `.auto` always selects. `MetalMmcqQuantizer`
-  (GPU compute shader) is opt-in for raw mode on ≥4MP inputs, where
-  on-device measurements show a ~5-10% quantize-stage speedup. Bring
-  your own via the `Quantizer` protocol.
-- **Automatic pre-downsampling.** `CGImageSourceCreateThumbnailAtIndex`
-  keeps memory bounded for 12-megapixel photos.
+  clipping to sRGB.
+- **CPU by default, Metal opt-in.** `MmcqQuantizer` (CPU, Accelerate) is the
+  default and what `.auto` selects. `MetalMmcqQuantizer` (GPU compute shader)
+  is opt-in for raw mode on ≥4MP inputs (~5-10% quantize speedup). Bring your
+  own via the `Quantizer` protocol.
+- **Automatic pre-downsampling** keeps memory bounded for 12-megapixel photos.
 - **Semantic swatches.** Six OKLCH roles (vibrant, muted, darkVibrant,
   darkMuted, lightVibrant, lightMuted) with accessible text-color
   recommendations.
 - **EXIF auto-orientation** for real-world iPhone photos.
 - **`os.Logger` + signposts** wired into Instruments' "Points of Interest".
-- **Typed errors.** `PaletteError.decodingFailed / imageEmpty /
-  allPixelsFiltered / cancelled / unsupportedSource / metalUnavailable`.
-
-## Install
-
-```swift
-// Package.swift
-dependencies: [
-    .package(url: "https://github.com/2dubu/PaletteKit", from: "1.5.0"),
-]
-```
-
-Minimum iOS 17 · Swift 6.0 · Xcode 16+.
+- **Typed errors** via `PaletteError`.
 
 ## API
 
@@ -206,23 +201,21 @@ extractor.palette(from:)          // Palette
 extractor.swatches(from:)         // SwatchMap
 ```
 
-`ImageSource` cases (`.cgImage` / `.data` / `.url`) and the full
-`ExtractionOptions` surface (`colorCount`, `quality`, `colorSpace`,
-`downsample`, `quantizer`, …) are documented in the
+`ImageSource` (`.cgImage` / `.data` / `.url`) and the full `ExtractionOptions`
+surface (`colorCount`, `quality`, `colorSpace`, `downsample`, `quantizer`, …)
+are documented in the
 [DocC reference](https://swiftpackageindex.com/2dubu/PaletteKit/documentation/palettekit).
 
-**Tip:** Prefer `.data(...)` for HEIC/JPEG bytes you already hold in
-memory or fetched over the network. PaletteKit's data path skips
-file-system overhead — measured ~17% faster than `.url(...)` on
-iPhone 15 Pro for a 4MP HEIC input. Use `.url(...)` when the file
-lives on disk so the decoder can mmap it directly.
+**Tip:** Prefer `.data(...)` for HEIC/JPEG bytes already in memory or fetched
+over the network — the data path skips file-system overhead (~17% faster than
+`.url(...)` on iPhone 15 Pro for a 4MP HEIC). Use `.url(...)` for on-disk files
+so the decoder can mmap them directly.
 
 ## Color space handling
 
-PaletteKit detects the source color space from `CGImage.colorSpace` and
-keeps palette colors in that space. Display P3 input → Display P3
-output. OKLCH is used only internally during quantization for
-perceptual uniformity.
+PaletteKit keeps palette colors in the source color space
+(`CGImage.colorSpace`): Display P3 input → Display P3 output. OKLCH is used
+only internally during quantization for perceptual uniformity.
 
 ```swift
 let palette = try await extractor.palette(from: .url(hdrPhotoURL))
@@ -231,14 +224,11 @@ palette.colorSpaceUsed  // .displayP3 on an iPhone HEIC, .sRGB elsewhere
 
 ## CPU vs Metal: choose by goal, not by image size
 
-Default (`.auto`) **always uses CPU MMCQ**. On-device measurements
-(iPhone 15 Pro, 4096² photos) showed CPU and Metal within ≤4ms after
-auto-downsample, so size-based routing added complexity without
-measurable wins at default settings.
-
-Metal becomes useful in a narrow band: **raw mode + ≥4MP input**, where
-it shaves ~5-10% off quantize. Use `.metal` only when you've also
-disabled downsampling.
+Default (`.auto`) **always uses CPU MMCQ**. On-device measurements (iPhone 15
+Pro, 4096² photos) put CPU and Metal within ≤4ms after auto-downsample, so
+size-based routing added complexity without measurable wins. Metal helps in one
+narrow band — **raw mode + ≥4MP input**, ~5-10% off quantize; use `.metal` only
+with downsampling disabled.
 
 | You want… | `quantizer` | `downsample` | Notes |
 | --- | --- | --- | --- |
@@ -260,10 +250,9 @@ try await extractor.palette(from: source,
     options: ExtractionOptions(downsample: .disabled, quantizer: .metal))
 ```
 
-Metal warms up the first time `MetalContext` is touched (shader compile +
-pipeline build). Subsequent calls are steady-state. In `DEBUG` builds,
-PaletteKit logs a hint to the console if you select `.metal` on input
-that's too small for the speedup to land.
+Metal warms up on first `MetalContext` use (shader compile + pipeline build);
+later calls are steady-state. `DEBUG` builds log a hint if you select `.metal`
+on input too small for the speedup to land.
 
 ## Instrumentation
 
@@ -279,9 +268,8 @@ palette.timings?.total           // Duration
 palette.timings?.quantizerUsed   // "MMCQ-CPU" or "MMCQ-Metal"
 ```
 
-Instruments traces are annotated via `os_signpost`
-(`com.paletteKit` / pointsOfInterest). Use the "Points of Interest"
-template to see decode / sample / quantize intervals.
+Traces are annotated via `os_signpost` (`com.paletteKit` / pointsOfInterest) —
+use the "Points of Interest" template for decode / sample / quantize intervals.
 
 ## Documentation
 
@@ -291,21 +279,19 @@ Full DocC catalog ships with the package:
 - `GettingStarted.md` · `Options.md` · `PerformanceTuning.md` · `Card.md`
 - `AlgorithmDeepDive.md` — MMCQ, OKLCH, Swatches internals
 
-Generate locally with `xcodebuild docbuild` or browse on
+Build locally with `xcodebuild docbuild` or browse on
 [Swift Package Index](https://swiftpackageindex.com/2dubu/PaletteKit/documentation).
 
 ## Example
 
-`Examples/PaletteKitDemo` — a minimal SwiftUI app showing a
-photo-picker → palette grid → swatches → timings flow. Tap **Generate
-Graphic** on the result screen to open the **Graphic Lab** — interactive
-playground for every `PaletteGraphic` configuration axis on your actual
-extracted palette.
+`Examples/PaletteKitDemo` — a minimal SwiftUI app: photo-picker → palette grid
+→ swatches → timings. Tap **Generate Graphic** on the result screen for the
+**Graphic Lab**, an interactive playground for every configuration axis on your
+actual extracted palette.
 
 ```bash
 make setup       # one-time: installs xcodegen via Homebrew if missing
 make demo-app    # generate PaletteKitDemo.xcodeproj and open it in Xcode
-                 # pick a simulator and press ⌘R to run
 ```
 
 See [`Examples/PaletteKitDemo/README.md`](./Examples/PaletteKitDemo/README.md)
@@ -313,24 +299,12 @@ for how the app is wired.
 
 ## Benchmark on your device
 
-The demo app ships with an on-device benchmark harness. Pick a real
-photo or use the synthesized fixture, vary size / quantizer /
-downsample, and export per-stage timings (decode, sample, quantize)
-as CSV for cross-device comparison.
-
-```bash
-make demo-app    # build & run on a connected iPhone, tap the
-                 # speedometer icon in the top-right
-```
-
-Tap **Run**, watch the chart fill in, then **Export** as Raw CSV or
-Summary CSV via the share sheet. Save exports under `benchmark/`
-(gitignored) for local-only analysis.
-
-This harness is primarily an internal development discipline tool
-(every CPU/GPU change has to clear a measurement gate before it
-lands). It ships in the demo app for transparency, but most apps
-don't need to run it.
+The demo app ships an on-device benchmark harness (speedometer icon, top-right):
+pick a real photo or the synthesized fixture, vary size / quantizer / downsample,
+**Run**, then **Export** per-stage timings (decode, sample, quantize) as CSV for
+cross-device comparison. It's primarily an internal discipline tool — every
+CPU/GPU change clears a measurement gate before it lands — so most apps don't
+need to run it.
 
 ## Requirements
 
@@ -340,13 +314,12 @@ don't need to run it.
 
 ## Acknowledgements
 
-Thanks to [color-thief](https://github.com/lokesh/color-thief) by
-Lokesh Dhakar (MIT) for charting the way — the MMCQ algorithm family,
-OKLCH-first quantization, and the six-role swatch layout shaped
-PaletteKit's direction. PaletteKit reimagines those ideas for iOS with a
-Metal compute histogram, Display P3 preservation, Swift 6 concurrency, and
-CGImageSource-based decoding, while keeping the algorithmic core
-compatible so outputs can be cross-verified against the reference.
+Thanks to [color-thief](https://github.com/lokesh/color-thief) by Lokesh Dhakar
+(MIT) — the MMCQ algorithm family, OKLCH-first quantization, and the six-role
+swatch layout shaped PaletteKit's direction. PaletteKit reimagines those ideas
+for iOS with a Metal compute histogram, Display P3 preservation, Swift 6
+concurrency, and CGImageSource-based decoding, while keeping the algorithmic
+core compatible so outputs can be cross-verified against the reference.
 
 ## License
 

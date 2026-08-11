@@ -91,7 +91,7 @@ extension PaletteGraphic {
         public var direction: GradientDirection
         /// Start anchor for the linear gradient flow. Ignored when
         /// ``direction`` is `.radial`. Uses SwiftUI's standard
-        /// ``SwiftUI/UnitPoint`` (origin top-leading, y down).
+        /// `SwiftUI.UnitPoint` (origin top-leading, y down).
         public var linearStart: UnitPoint
         /// End anchor for the linear gradient flow. Ignored when
         /// ``direction`` is `.radial`.

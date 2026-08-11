@@ -5,9 +5,9 @@ How PaletteKit turns pixels into a palette.
 ## Modified Median Cut Quantization
 
 The core algorithm is Modified Median Cut Quantization (MMCQ), the same
-algorithm used by color-thief. PaletteKit ports the
-`@lokesh.dhakar/quantize` reference verbatim so cross-verification stays
-simple.
+algorithm family used by color-thief. PaletteKit follows the reference's
+histogram and median-cut structure in an independent Swift implementation.
+Exact palette parity is not guaranteed.
 
 ### Step 1: reduced histogram
 
@@ -25,11 +25,11 @@ color within it.
 
 ### Step 3: median cut
 
-VBoxes are held in a priority queue. On each iteration we pop the "best"
-box, cut it along its widest RGB axis at the bin that passes the halfway
-mark in population, and push the two children back. The split chooses
-the bin immediately past the midpoint and nudges the cut into the larger
-half to keep both children non-empty.
+VBoxes are held in a priority queue. On each iteration we pop the "best" box,
+cut it along the widest axis in the current three-channel quantization space,
+and push the two children back. The split chooses the bin immediately past the
+population midpoint and nudges the cut into the larger half to keep both
+children non-empty.
 
 ### Step 4: two-phase iteration
 
@@ -48,14 +48,19 @@ proportions, and wraps each entry in ``PaletteColor``.
 
 `colorSpace: .oklch` is the default. Pixels are converted to OKLCH,
 scaled to the 0-255 integer range MMCQ expects, quantized, then mapped
-back to sRGB (or Display P3 when the source image is P3). The result is
-a more perceptually uniform palette — colors "feel" evenly spaced to the
-eye rather than being evenly spaced in RGB.
+back to clamped, 8-bit sRGB. The result is a more perceptually uniform palette
+— colors "feel" evenly spaced to the eye rather than being evenly spaced in
+RGB.
 
 - ``OKLCHConversion/rgbToOKLCH(_:)`` implements the Oklab M1 matrix
   + cube-root + Lab-to-LCh reduction.
 - ``OKLCHConversion/displayP3ToOKLCH(_:)`` uses the P3-to-linear-sRGB
-  matrix so wide-gamut chroma survives the round-trip.
+  matrix so Display P3 source coordinates are interpreted correctly before
+  quantization.
+
+The built-in SwiftUI, UIKit, and Core Graphics result adapters emit sRGB. See
+<doc:ColorSpaces> for the distinction between P3-aware source processing and
+end-to-end P3 rendering.
 
 ## Semantic swatches
 

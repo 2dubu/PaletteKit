@@ -115,7 +115,7 @@ public struct AsyncPaletteGraphic<Content: View>: View {
 
 extension AsyncPaletteGraphic where Content == AnyView {
     /// Convenience init that auto-renders ``PaletteGraphic`` on success
-    /// and shows ``placeholder`` during loading and on failure. Use the
+    /// and shows `placeholder` during loading and on failure. Use the
     /// phase-based init when you need to observe phases or compose
     /// secondary UI alongside the resolved graphic.
     ///

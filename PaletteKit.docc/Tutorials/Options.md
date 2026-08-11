@@ -5,8 +5,9 @@ Tune extraction via ``ExtractionOptions``.
 ## Overview
 
 Every public method on ``PaletteExtractor`` accepts an ``ExtractionOptions``.
-The defaults mirror color-thief's (colorCount=10, quality=10, OKLCH,
-ignoreWhite=true) so results are predictable if you are porting over.
+The defaults follow color-thief v3's familiar color-count, quality, OKLCH, and
+white-filter values. PaletteKit is an independent implementation, so exact
+palette parity is not guaranteed.
 
 ### Quality and size
 
@@ -21,8 +22,10 @@ ExtractionOptions(
 - `quality` is a stride multiplier. `.stride(1)` samples every pixel;
   `.stride(10)` (the default) is typically fast enough and still
   representative.
-- `downsample` routes through `CGImageSourceCreateThumbnailAtIndex` so a
-  large photo never allocates a full RGBA buffer.
+- For `Data` and URL sources, `downsample` first asks ImageIO for a thumbnail
+  through `CGImageSourceCreateThumbnailAtIndex`. ImageIO can fall back to a
+  full decode if thumbnail creation fails. A `CGImage` source is already
+  decoded before PaletteKit receives it and is resized when needed.
 
 ### Filtering
 
@@ -44,25 +47,27 @@ ExtractionOptions(
 
 ```swift
 ExtractionOptions(colorSpace: .oklch)   // default
-ExtractionOptions(colorSpace: .sRGB)    // color-thief v2 parity
+ExtractionOptions(colorSpace: .sRGB)    // direct RGB-space MMCQ
 ```
 
-Display P3 input is auto-detected. When `colorSpace == .oklch` the
-resulting palette stays in the source color space — the OKLCH conversion
-is used only inside the quantization step for perceptual uniformity.
+Display P3 input is auto-detected. When `colorSpace == .oklch`, sampled pixels
+use the matching sRGB-to-OKLCH or Display P3-to-OKLCH conversion before
+quantization. Returned `PaletteColor` values are untagged 8-bit RGB, and the
+default path converts them back to sRGB. `colorSpaceUsed` can still record a P3
+input; it is not an embedded output profile. The built-in SwiftUI/UIKit
+adapters emit sRGB. See <doc:ColorSpaces> for the exact pipeline and output
+boundary.
 
 ### Choosing an `ImageSource`
 
 `ImageSource` controls where pixels come from. The right case depends on
 where the bytes already live:
 
-- `.data(_)` — bytes you already hold in memory or fetched over the
-  network. **Most-optimized path** for HEIC/JPEG: PaletteKit constructs
-  the `CGImageSource` directly from `Data`, skipping any file-system
-  hop. Measured ~17% faster than `.url(_)` on iPhone 15 Pro for a 4MP
-  HEIC input.
-- `.url(_)` — file on disk. The decoder can mmap the file directly,
-  which is the right call when the bytes are already on disk.
+- `.data(_)` — bytes you already hold in memory or fetched over the network.
+  PaletteKit constructs the `CGImageSource` directly from `Data`, skipping a
+  file-system hop.
+- `.url(_)` — file on disk. ImageIO reads from the file URL without requiring
+  the caller to create a `Data` value first.
 - `.cgImage(_)` — you've already decoded a `CGImage` somewhere else
   (e.g. AppKit/UIKit gave you one). PaletteKit re-uses it as-is.
 
@@ -70,32 +75,36 @@ If you're holding `Data` and have a choice, prefer `.data(_)`.
 
 ### Choosing accuracy vs speed
 
-There are four common goals; pick the row that matches yours.
+There are three common goals; pick the row that matches yours.
 
-| You want… | `quantizer` | `downsample` | Notes |
-| --- | --- | --- | --- |
-| **A palette, no fuss** | `.auto` | default | The default. Always CPU. |
-| **Maximum color accuracy** | `.cpu` | `.disabled` | Process every pixel. Slowest, most accurate. |
-| **Accuracy + speed on large inputs** | `.metal` | `.disabled` | ≥4MP only. ~5-10% quantize win vs CPU raw. |
-| **Ensure work runs on GPU** | `.metal` | default | Falls back to CPU if Metal is unavailable. |
+| You want… | `quality` | `quantizer` | `downsample` | Notes |
+| --- | --- | --- | --- | --- |
+| **A palette with defaults** | default | `.auto` | default | Samples every tenth pixel; uses CPU. |
+| **Sample every source pixel** | `.highest` | `.cpu` | `.disabled` | Highest input detail and the most CPU work. |
+| **Compare Metal on a large input** | `.highest` | `.metal` | `.disabled` | Measure against CPU with `collectTimings`. |
 
 ```swift
-// Default — CPU MMCQ with auto-downsample to ~1M pixels:
+// Default — CPU MMCQ with up to about 1M raster pixels:
 ExtractionOptions()                                    // == .auto, default downsample
 
-// Maximum accuracy — every pixel, CPU MMCQ:
-ExtractionOptions(downsample: .disabled, quantizer: .cpu)
+// Every source pixel, CPU MMCQ:
+ExtractionOptions(quality: .highest, downsample: .disabled, quantizer: .cpu)
 
-// Large-input accuracy + Metal (≥4MP raw):
-ExtractionOptions(downsample: .disabled, quantizer: .metal)
+// The same full-sampling workload with a Metal histogram:
+ExtractionOptions(quality: .highest, downsample: .disabled, quantizer: .metal)
 
 // Custom quantizer:
 ExtractionOptions(quantizer: .custom(MyQuantizer()))
 ```
 
-`.auto` always picks CPU regardless of image size — on-device
-measurements showed Metal didn't beat CPU at default settings. See
-<doc:PerformanceTuning> for the underlying numbers.
+`.auto` always picks CPU regardless of image size. Use `collectTimings` to
+compare CPU and Metal with the images and options your application uses. See
+<doc:PerformanceTuning> for the measurement workflow.
+
+On targets where the Metal framework cannot be imported, an explicit `.metal`
+selection uses the CPU implementation. On Metal-capable targets, failure to
+create a device, command queue, shader library, or compute pipeline is surfaced
+as an error.
 
 ### SwiftUI integration
 
@@ -103,8 +112,11 @@ measurements showed Metal didn't beat CPU at default settings. See
 with any `ShapeStyle`-accepting modifier without an adapter call:
 
 ```swift
-let palette = try await extractor.palette(from: .data(imageData))
-let swatches = try await extractor.swatches(from: .data(imageData))
+let palette = try await extractor.palette(
+    from: .data(imageData),
+    options: ExtractionOptions(colorCount: 16)
+)
+let swatches = SwatchClassifier().classify(palette: palette)
 
 Rectangle()
     .fill(palette.dominant ?? .black)

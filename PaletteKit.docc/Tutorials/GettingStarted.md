@@ -22,9 +22,11 @@ func extractDominant(cgImage: CGImage) async throws -> PaletteColor? {
 }
 ```
 
-`dominantColor(from:)` runs a 5-color extraction and returns the most
-populous one. The `PaletteColor` value carries `hex`, `hsl`, `oklch`,
-`contrast`, and `textColor` without any extra calls.
+`dominantColor(from:)` runs palette extraction with the supplied options and
+returns the most populous color. The default `colorCount` is 10; values below
+the valid palette range are normalized to 5 for this convenience method. The
+`PaletteColor` value carries `hex`, `hsl`, `oklch`, `contrast`, and `textColor`
+without any extra calls.
 
 ### Extract a palette
 
@@ -40,7 +42,9 @@ for entry in palette {
 ```
 
 `palette` is a `Collection<PaletteColor>` sorted by population. Its
-`colorSpaceUsed` tells you whether the result lives in sRGB or Display P3.
+`colorSpaceUsed` records the color space detected or selected by the extraction
+pipeline; individual `PaletteColor` values do not embed a color profile. See
+<doc:ColorSpaces> for details.
 
 ### Get semantic swatches
 
@@ -52,8 +56,9 @@ if let vibrant = swatches.vibrant {
 }
 ```
 
-Each `Swatch` also exposes `titleTextColor` and `bodyTextColor` so you can
-render accessible text directly on top of the swatch.
+Each `Swatch` also exposes `titleTextColor` and `bodyTextColor` as recommended
+black or white foreground colors. Validate the final combination against your
+application's accessibility target.
 
 ## Using the result
 
@@ -64,8 +69,11 @@ render accessible text directly on top of the swatch.
 `PaletteColor` conforms to `ShapeStyle` (iOS 17+), so it slots directly into `.fill`, `.foregroundStyle`, `.background`, `.tint`, and `.border`:
 
 ```swift
-let palette = try await extractor.palette(from: .data(imageData))
-let swatches = try await extractor.swatches(from: .data(imageData))
+let palette = try await extractor.palette(
+    from: .data(imageData),
+    options: ExtractionOptions(colorCount: 16)
+)
+let swatches = SwatchClassifier().classify(palette: palette)
 
 VStack {
     Rectangle()
@@ -88,8 +96,11 @@ Internally `resolve(in:)` produces a `Color.Resolved` tagged sRGB.
 For UIKit, use the `UIColor(_:)` convenience initializer:
 
 ```swift
-let palette = try await extractor.palette(from: .data(imageData))
-let swatches = try await extractor.swatches(from: .data(imageData))
+let palette = try await extractor.palette(
+    from: .data(imageData),
+    options: ExtractionOptions(colorCount: 16)
+)
+let swatches = SwatchClassifier().classify(palette: palette)
 
 if let vibrant = swatches.vibrant {
     view.backgroundColor = UIColor(vibrant.color)
@@ -124,6 +135,10 @@ to work; pick whichever reads better at the callsite.
 
 ## Next steps
 
+- See <doc:ImageColorExtraction> for `UIImage`, `CGImage`, local file, and
+  remote image examples.
+- See <doc:ColorSpaces> for Display P3 input handling, OKLCH quantization, and
+  the sRGB output boundary.
 - See <doc:Options> for fine-grained control over quality, color count,
   filters, and backend selection.
 - See <doc:PerformanceTuning> for the Metal path and measurement tips.

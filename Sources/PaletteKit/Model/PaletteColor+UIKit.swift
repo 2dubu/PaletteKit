@@ -18,7 +18,7 @@ extension UIColor {
 extension PaletteColor {
     /// A Core Graphics representation of this color tagged sRGB. Use directly
     /// with `CALayer.backgroundColor`, `CGContext` fills, etc., without an
-    /// intermediate ``UIColor`` round-trip.
+    /// intermediate `UIColor` round-trip.
     public var cgColor: CGColor {
         CGColor(
             srgbRed: CGFloat(rgb.r) / 255,

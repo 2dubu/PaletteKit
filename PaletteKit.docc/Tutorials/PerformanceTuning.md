@@ -5,9 +5,12 @@ places: decoding pixels and building the MMCQ histogram.
 
 ## Decoding
 
-The loader prefers `CGImageSourceCreateThumbnailAtIndex` with
-`kCGImageSourceThumbnailMaxPixelSize`, so a 12-megapixel photo never
-allocates a 48-MB RGBA buffer. Adjust the cap with `downsample`:
+For `Data` and URL sources, the loader first requests an ImageIO thumbnail with
+`CGImageSourceCreateThumbnailAtIndex` and
+`kCGImageSourceThumbnailMaxPixelSize`. This avoids a full-resolution decode
+when thumbnail creation succeeds. ImageIO can fall back to a full decode, and
+a `CGImage` source is already decoded before PaletteKit receives it. Adjust the
+target with `downsample`:
 
 ```swift
 ExtractionOptions(downsample: .maxEdge(1024))
@@ -24,27 +27,36 @@ embarrassingly parallel; the median-cut phase is not.
   then hands the result to the same median-cut engine.
 
 The Metal path pays a small cold-start cost the first time
-``MetalContext`` is warmed up (shader compile + pipeline build). After
-that, subsequent extractions are fast. The first extraction reaches steady
-state after ``MetalMmcqQuantizer/prepare()`` has run once per process.
+`MetalContext` is warmed up (shader compile + pipeline build). After
+that, subsequent extractions reuse the cached resources.
 
 ## Auto-selection
 
-``QuantizerSelection/auto`` **always selects CPU MMCQ.** On-device
-measurements (iPhone 15 Pro / A17 Pro, 4096² photos) showed CPU and
-Metal within ≤4ms after auto-downsample, so size-based routing added
-complexity without measurable wins at default settings.
+``QuantizerSelection/auto`` **always selects CPU MMCQ.** This keeps the default
+path predictable and avoids paying Metal setup and transfer costs without a
+workload-specific measurement.
 
-Metal becomes useful in a narrow band — **raw mode + ≥4MP input** —
-where it shaves ~5-10% off quantize. See <doc:Options> for the full
-"Choosing accuracy vs speed" decision tree, or jump straight to the
-overrides:
+Metal is available for large, non-downsampled inputs. Whether it helps depends
+on the device, source image, sampling options, and call frequency. See
+<doc:Options> for the full "Choosing accuracy vs speed" decision tree, or
+compare the explicit overrides with `collectTimings`.
 
 ```swift
-ExtractionOptions(quantizer: .cpu)    // explicit CPU
-ExtractionOptions(quantizer: .metal)  // explicit Metal (degrades to CPU
-                                      // if Metal is unavailable)
+let cpu = ExtractionOptions(
+    quality: .highest,
+    downsample: .disabled,
+    quantizer: .cpu
+)
+let metal = ExtractionOptions(
+    quality: .highest,
+    downsample: .disabled,
+    quantizer: .metal
+)
 ```
+
+On a Metal-capable target, device, shader, or pipeline creation failures are
+reported as extraction errors. Measure the path with your own representative
+images before enabling it in production.
 
 In `DEBUG` builds, PaletteKit emits a console hint when `.metal` is
 selected on input that's too small to benefit (sampled pixel count
@@ -54,8 +66,8 @@ selected on input that's too small to benefit (sampled pixel count
 
 PaletteKit emits `os_signpost` events on
 `com.paletteKit / pointsOfInterest`. Record an Instruments trace with the
-"Points of Interest" template to see decode / sample / quantize durations
-around any call.
+"Points of Interest" template to see the overall `extract` interval around a
+call. Use `collectTimings` for separate decode, sample, and quantize durations.
 
 ## Measuring your own workloads
 

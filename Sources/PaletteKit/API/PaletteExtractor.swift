@@ -132,9 +132,10 @@ public struct PaletteExtractor: Sendable {
 
     /// Convenience: returns the single most representative color.
     ///
-    /// Runs a 5-color extraction internally and returns the color with the
-    /// highest population. Use ``palette(from:options:)`` instead when you need
-    /// the full result.
+    /// Runs palette extraction with the supplied options and returns the color
+    /// with the highest population. A `colorCount` below the valid palette
+    /// range is normalized to 5 for this convenience method. Use
+    /// ``palette(from:options:)`` when you need the full result.
     public func dominantColor(
         from source: ImageSource,
         options: ExtractionOptions = .init()

@@ -1,8 +1,19 @@
 import Foundation
 
+/// A source color space or an extraction color-space mode.
+///
+/// ``oklch`` is the recommended extraction mode. ``sRGB`` and ``displayP3``
+/// quantize rasterized RGB channel values directly; selecting either mode does
+/// not convert pixels from the other RGB color space.
 public enum ColorSpace: Sendable, Equatable {
+    /// The sRGB color space, or direct RGB-space quantization labeled as sRGB.
     case sRGB
+
+    /// The Display P3 color space, or direct RGB-space quantization labeled as
+    /// Display P3.
     case displayP3
+
+    /// Source-aware OKLCH quantization that returns clamped, 8-bit sRGB colors.
     case oklch
 }
 

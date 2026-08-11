@@ -4,7 +4,7 @@ import SwiftUI
 /// Cross-fade transition applied when ``AsyncPaletteGraphic`` resolves
 /// asynchronously (cache miss). Cache hits skip the transition.
 ///
-/// Set on a SwiftUI subtree via ``SwiftUI/View/asyncPaletteGraphicTransition(_:)``.
+/// Set on a SwiftUI subtree via `View.asyncPaletteGraphicTransition(_:)`.
 /// UIKit consumers configure ``AsyncPaletteGraphicView/transition`` directly.
 public struct AsyncPaletteGraphicTransition: Equatable, Sendable {
     public let animation: Animation

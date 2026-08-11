@@ -118,4 +118,3 @@ For UIKit, set ``AsyncPaletteGraphicView/onFailure`` directly.
 
 ### Transitions
 - ``AsyncPaletteGraphicTransition``
-- ``SwiftUI/View/asyncPaletteGraphicTransition(_:)``

@@ -153,6 +153,9 @@ enum MmcqEngine {
         let lookahead = partial.map { total - $0 }
 
         let (lo, hi) = axisRange(box: box, axis: cutAxis)
+        
+        // Safety: Avoid crash when initializing ClosedRange if values are unexpected
+        guard lo <= hi else { return nil }
 
         for i in lo...hi {
             if partial[i] > total / 2 {
@@ -193,6 +196,11 @@ enum MmcqEngine {
     ) -> (partial: [Int], total: Int) {
         var partial = [Int](repeating: 0, count: histSize)
         var total = 0
+        
+        // Safety: Avoid crash when initializing ClosedRange if values are unexpected
+        guard box.r1 <= box.r2, box.g1 <= box.g2, box.b1 <= box.b2 else {
+            return (partial, 0)
+        }
 
         switch axis {
         case .r:
@@ -303,6 +311,10 @@ enum MmcqEngine {
 
         func count(histogram: [UInt32]) -> Int {
             if let cached = cachedCount { return cached }
+            
+            // Safety: Avoid crash when initializing ClosedRange if values are unexpected
+            guard r1 <= r2, g1 <= g2, b1 <= b2 else { return 0 }
+            
             var npix = 0
             for i in r1...r2 {
                 for j in g1...g2 {
@@ -316,6 +328,11 @@ enum MmcqEngine {
 
         func average(histogram: [UInt32]) -> RGB {
             let mult = 1 << MmcqEngine.rShift
+            
+            // Safety: Avoid crash when initializing ClosedRange if values are unexpected
+            guard r1 <= r2, g1 <= g2, b1 <= b2 else {
+                return RGB(r: 0, g: 0, b: 0)
+            }
 
             if r1 == r2, g1 == g2, b1 == b2 {
                 return RGB(

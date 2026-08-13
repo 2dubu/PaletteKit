@@ -172,7 +172,7 @@ enum MmcqEngine {
                 )
                 
                 // Safety: Avoid crash if array index is out-of-bounds
-                guard partial.indices.contains(d2), partial.indices.contains(d2 - 1), lookahead.indices.contains(d2) else { return nil }
+                guard partial.indices.contains(d2), lookahead.indices.contains(d2), lo >= 0 else { return nil }
                 
                 // Skip zero-count bins above the pivot
                 while d2 < hi, partial[d2] == 0 { d2 += 1 }

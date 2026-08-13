@@ -48,7 +48,12 @@ enum MmcqEngine {
                 let r = Int(pixel.r) >> rShift
                 let g = Int(pixel.g) >> rShift
                 let b = Int(pixel.b) >> rShift
-                working[colorIndex(r, g, b)] &+= 1
+                let index = colorIndex(r, g, b)
+                
+                // Safety: Avoid crash if array index is out-of-bounds
+                guard working.indices.contains(index) else { return [] }
+                
+                working[index] &+= 1
             }
             histogram = working
         }
@@ -155,6 +160,9 @@ enum MmcqEngine {
         let (lo, hi) = axisRange(box: box, axis: cutAxis)
 
         for i in lo...hi {
+            // Safety: Avoid crash if array index is out-of-bounds
+            guard partial.indices.contains(i) else { return nil }
+            
             if partial[i] > total / 2 {
                 var d2 = findSplitPoint(
                     partial: partial,
@@ -162,6 +170,10 @@ enum MmcqEngine {
                     range: lo...hi,
                     pivot: i
                 )
+                
+                // Safety: Avoid crash if array index is out-of-bounds
+                guard partial.indices.contains(d2), partial.indices.contains(d2 - 1), lookahead.indices.contains(d2) else { return nil }
+                
                 // Skip zero-count bins above the pivot
                 while d2 < hi, partial[d2] == 0 { d2 += 1 }
                 // Also skip trailing zero-count bins when the lookahead is empty
@@ -197,10 +209,18 @@ enum MmcqEngine {
         switch axis {
         case .r:
             for i in box.r1...box.r2 {
+                // Safety: Avoid crash if array index is out-of-bounds
+                guard partial.indices.contains(i) else { return (partial, 0) }
+                
                 var sum = 0
                 for j in box.g1...box.g2 {
                     for k in box.b1...box.b2 {
-                        sum += Int(histogram[colorIndex(i, j, k)])
+                        let index = colorIndex(i, j, k)
+                        
+                        // Safety: Avoid crash if array index is out-of-bounds
+                        guard histogram.indices.contains(index) else { return (partial, 0) }
+                        
+                        sum += Int(histogram[index])
                     }
                 }
                 total += sum
@@ -208,10 +228,18 @@ enum MmcqEngine {
             }
         case .g:
             for i in box.g1...box.g2 {
+                // Safety: Avoid crash if array index is out-of-bounds
+                guard partial.indices.contains(i) else { return (partial, 0) }
+                
                 var sum = 0
                 for j in box.r1...box.r2 {
                     for k in box.b1...box.b2 {
-                        sum += Int(histogram[colorIndex(j, i, k)])
+                        let index = colorIndex(j, i, k)
+                        
+                        // Safety: Avoid crash if array index is out-of-bounds
+                        guard histogram.indices.contains(index) else { return (partial, 0) }
+                        
+                        sum += Int(histogram[index])
                     }
                 }
                 total += sum
@@ -219,10 +247,18 @@ enum MmcqEngine {
             }
         case .b:
             for i in box.b1...box.b2 {
+                // Safety: Avoid crash if array index is out-of-bounds
+                guard partial.indices.contains(i) else { return (partial, 0) }
+                
                 var sum = 0
                 for j in box.r1...box.r2 {
                     for k in box.g1...box.g2 {
-                        sum += Int(histogram[colorIndex(j, k, i)])
+                        let index = colorIndex(j, k, i)
+                        
+                        // Safety: Avoid crash if array index is out-of-bounds
+                        guard histogram.indices.contains(index) else { return (partial, 0) }
+                        
+                        sum += Int(histogram[index])
                     }
                 }
                 total += sum
@@ -307,7 +343,12 @@ enum MmcqEngine {
             for i in r1...r2 {
                 for j in g1...g2 {
                     for k in b1...b2 {
-                        npix += Int(histogram[MmcqEngine.colorIndex(i, j, k)])
+                        let index = MmcqEngine.colorIndex(i, j, k)
+                        
+                        // Safety: Avoid crash if array index is out-of-bounds
+                        guard histogram.indices.contains(index) else { return 0 }
+                        
+                        npix += Int(histogram[index])
                     }
                 }
             }
@@ -333,7 +374,13 @@ enum MmcqEngine {
             for i in r1...r2 {
                 for j in g1...g2 {
                     for k in b1...b2 {
-                        let value = Int(histogram[MmcqEngine.colorIndex(i, j, k)])
+                        let index = MmcqEngine.colorIndex(i, j, k)
+                        
+                        // Safety: Avoid crash if array index is out-of-bounds
+                        guard histogram.indices.contains(index) else { return RGB(r: 0, g: 0, b: 0) }
+                        
+                        let value = Int(histogram[index])
+                        
                         if value == 0 { continue }
                         ntot += value
                         rSum += Double(value) * (Double(i) + 0.5) * Double(mult)

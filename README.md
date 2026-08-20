@@ -40,8 +40,9 @@ dependencies: [
 ]
 ```
 
-Minimum iOS 17 · Swift 6.0 · Xcode 16+. For on-device naming and summaries,
-also add the optional `PaletteKitInsights` product (iOS 26+).
+Minimum iOS 17 · Xcode 16+. Client apps can remain in Swift 5 language mode.
+For on-device naming and summaries, also add the optional `PaletteKitInsights`
+product (iOS 26+).
 
 ## Quick start
 
@@ -310,7 +311,12 @@ need to run it.
 
 - iOS 17+
 - Xcode 16+
-- Swift 6.0 (strict concurrency)
+- Client targets may use Swift 5 or Swift 6 language mode.
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the
+development workflow, testing expectations, and pull request guidelines.
 
 ## Acknowledgements
 

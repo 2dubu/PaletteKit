@@ -4,6 +4,48 @@ import Foundation
 @testable import PaletteKit
 
 enum AsyncTestSupport {
+    private enum EventWaitError: Error, CustomStringConvertible, Sendable {
+        case streamFinished(String)
+        case timedOut(String, Duration)
+
+        var description: String {
+            switch self {
+            case .streamFinished(let event):
+                return "event stream finished before \(event)"
+            case .timedOut(let event, let timeout):
+                return "timed out after \(timeout) waiting for \(event)"
+            }
+        }
+    }
+
+    /// Await a callback-backed event without repeatedly waking the main actor.
+    /// The timeout races the event itself, so an event delivered at the deadline
+    /// cannot be discarded by a separate wall-clock check.
+    static func nextEvent<Event: Sendable>(
+        from stream: AsyncStream<Event>,
+        timeout: Duration = .seconds(30),
+        waitingFor eventDescription: String
+    ) async throws -> Event {
+        try await withThrowingTaskGroup(of: Event.self) { group in
+            group.addTask {
+                for await event in stream {
+                    return event
+                }
+                throw EventWaitError.streamFinished(eventDescription)
+            }
+            group.addTask {
+                try await Task.sleep(for: timeout)
+                throw EventWaitError.timedOut(eventDescription, timeout)
+            }
+
+            defer { group.cancelAll() }
+            guard let event = try await group.next() else {
+                throw EventWaitError.streamFinished(eventDescription)
+            }
+            return event
+        }
+    }
+
     /// Synthesise a small solid-color CGImage for in-memory tests
     /// (no disk / network roundtrip required).
     static func makeSolidImage(rgb: (UInt8, UInt8, UInt8), size: Int = 32) -> CGImage {

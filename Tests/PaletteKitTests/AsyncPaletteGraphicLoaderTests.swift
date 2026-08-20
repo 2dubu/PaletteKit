@@ -6,6 +6,11 @@ import Foundation
 @MainActor
 @Suite("AsyncPaletteGraphicLoader")
 struct AsyncPaletteGraphicLoaderTests {
+    private enum LoadEvent: Sendable {
+        case success(fromCache: Bool)
+        case failure
+    }
+
     @Test("initial phase is .empty")
     func initialPhase() {
         let loader = AsyncPaletteGraphicLoader()
@@ -49,6 +54,15 @@ struct AsyncPaletteGraphicLoaderTests {
         )
 
         let loader = AsyncPaletteGraphicLoader()
+        let (events, eventContinuation) = AsyncStream<LoadEvent>.makeStream()
+        loader.onSuccess = { _, _, fromCache in
+            eventContinuation.yield(.success(fromCache: fromCache))
+            eventContinuation.finish()
+        }
+        loader.onFailure = { _ in
+            eventContinuation.yield(.failure)
+            eventContinuation.finish()
+        }
         loader.load(context: context, cache: cache)
 
         // Should transition to .loading immediately.
@@ -56,8 +70,15 @@ struct AsyncPaletteGraphicLoaderTests {
             Issue.record("expected .loading after kick-off, got \(loader.phase)")
         }
 
-        // Wait for completion (poll with small sleeps; integration boundary).
-        try await waitForSuccess(loader: loader, timeout: .seconds(30))
+        let event = try await AsyncTestSupport.nextEvent(
+            from: events,
+            waitingFor: "the cache-miss load callback"
+        )
+        guard case .success(let callbackFromCache) = event else {
+            Issue.record("expected the success callback, got failure")
+            return
+        }
+        #expect(callbackFromCache == false)
 
         guard case .success(let p, _, let fromCache) = loader.phase else {
             Issue.record("expected .success, got \(loader.phase)")
@@ -74,7 +95,16 @@ struct AsyncPaletteGraphicLoaderTests {
     func failurePath() async throws {
         let loader = AsyncPaletteGraphicLoader()
         var captured: Error?
-        loader.onFailure = { captured = $0 }
+        let (events, eventContinuation) = AsyncStream<LoadEvent>.makeStream()
+        loader.onSuccess = { _, _, fromCache in
+            eventContinuation.yield(.success(fromCache: fromCache))
+            eventContinuation.finish()
+        }
+        loader.onFailure = {
+            captured = $0
+            eventContinuation.yield(.failure)
+            eventContinuation.finish()
+        }
 
         // 1×1 white CGImage with `.fail` fallback strategy → all pixels
         // filtered (default `ignoreWhite = true` drops the only pixel) →
@@ -87,7 +117,14 @@ struct AsyncPaletteGraphicLoaderTests {
         )
         loader.load(context: context, cache: nil)
 
-        try await waitForFailure(loader: loader, timeout: .seconds(30))
+        let event = try await AsyncTestSupport.nextEvent(
+            from: events,
+            waitingFor: "the invalid-source failure callback"
+        )
+        guard case .failure = event else {
+            Issue.record("expected the failure callback, got success")
+            return
+        }
 
         if case .failure = loader.phase { } else {
             Issue.record("expected .failure, got \(loader.phase)")
@@ -159,38 +196,6 @@ struct AsyncPaletteGraphicLoaderTests {
         let a = ResolutionContext(image: .url(url), options: optsA, cacheKey: nil)
         let b = ResolutionContext(image: .url(url), options: optsB, cacheKey: nil)
         #expect(a.storageKey != b.storageKey)
-    }
-
-    // MARK: - Helpers
-
-    @MainActor
-    private func waitForSuccess(loader: AsyncPaletteGraphicLoader,
-                                timeout: Duration) async throws {
-        let deadline = ContinuousClock.now.advanced(by: timeout)
-        while ContinuousClock.now < deadline {
-            if case .success = loader.phase { return }
-            if case .failure(let e) = loader.phase {
-                Issue.record("expected .success, got .failure(\(e))")
-                return
-            }
-            try await Task.sleep(for: .milliseconds(50))
-        }
-        Issue.record("timed out waiting for .success; final phase: \(loader.phase)")
-    }
-
-    @MainActor
-    private func waitForFailure(loader: AsyncPaletteGraphicLoader,
-                                timeout: Duration) async throws {
-        let deadline = ContinuousClock.now.advanced(by: timeout)
-        while ContinuousClock.now < deadline {
-            if case .failure = loader.phase { return }
-            if case .success = loader.phase {
-                Issue.record("expected .failure, got .success")
-                return
-            }
-            try await Task.sleep(for: .milliseconds(50))
-        }
-        Issue.record("timed out waiting for .failure; final phase: \(loader.phase)")
     }
 }
 

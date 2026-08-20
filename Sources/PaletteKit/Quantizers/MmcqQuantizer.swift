@@ -48,12 +48,7 @@ enum MmcqEngine {
                 let r = Int(pixel.r) >> rShift
                 let g = Int(pixel.g) >> rShift
                 let b = Int(pixel.b) >> rShift
-                let index = colorIndex(r, g, b)
-                
-                // Safety: Avoid crash if array index is out-of-bounds
-                guard working.indices.contains(index) else { return [] }
-                
-                working[index] &+= 1
+                working[colorIndex(r, g, b)] &+= 1
             }
             histogram = working
         }
@@ -95,28 +90,32 @@ enum MmcqEngine {
         histogram: [UInt32]
     ) throws {
         var iterations = 0
-        var colors = queue.size
+        var unsplittable: [VBox] = []
+        defer {
+            for box in unsplittable {
+                queue.push(box)
+            }
+        }
 
         while iterations < maxIterations {
-            if colors >= target { return }
+            if queue.size + unsplittable.count >= target { return }
             iterations += 1
             try Task.checkCancellation()
 
             guard let box = queue.pop() else { return }
-            if box.count(histogram: histogram) == 0 {
-                queue.push(box)
+            guard box.count(histogram: histogram) > 0 else {
+                assertionFailure("MMCQ queued a VBox with no histogram population")
                 continue
             }
 
             guard let split = medianCut(histogram: histogram, box: box) else {
-                queue.push(box)
+                // Keep valid terminal boxes in the result, but remove them from
+                // the active queue so they do not consume the iteration budget.
+                unsplittable.append(box)
                 continue
             }
             queue.push(split.0)
-            if let second = split.1 {
-                queue.push(second)
-                colors += 1
-            }
+            queue.push(split.1)
         }
     }
 
@@ -137,63 +136,49 @@ enum MmcqEngine {
             .sorted { $0.population > $1.population }
     }
 
-    private static func medianCut(histogram: [UInt32], box: VBox) -> (VBox, VBox?)? {
+    private static func medianCut(histogram: [UInt32], box: VBox) -> (VBox, VBox)? {
         let count = box.count(histogram: histogram)
-        guard count > 0 else { return nil }
-        if count == 1 { return (box, nil) }
+        guard count > 1 else { return nil }
 
-        let rWidth = box.r2 - box.r1 + 1
-        let gWidth = box.g2 - box.g1 + 1
-        let bWidth = box.b2 - box.b1 + 1
-        let maxWidth = max(rWidth, gWidth, bWidth)
+        // Prefer the widest axis to preserve MMCQ's normal output, but fall
+        // back when that axis contains only one occupied coordinate. This can
+        // happen after an earlier cut leaves empty geometric space in a child.
+        for cutAxis in axesByDescendingWidth(box: box) {
+            let (lo, hi) = axisRange(box: box, axis: cutAxis)
+            guard lo < hi else { continue }
 
-        let cutAxis: Axis
-        if maxWidth == rWidth { cutAxis = .r }
-        else if maxWidth == gWidth { cutAxis = .g }
-        else { cutAxis = .b }
-
-        let (partial, total) = partialSums(histogram: histogram, box: box, axis: cutAxis)
-        guard total > 0 else { return nil }
-
-        let lookahead = partial.map { total - $0 }
-
-        let (lo, hi) = axisRange(box: box, axis: cutAxis)
-
-        for i in lo...hi {
-            // Safety: Avoid crash if array index is out-of-bounds
-            guard partial.indices.contains(i) else { return nil }
-            
-            if partial[i] > total / 2 {
-                var d2 = findSplitPoint(
-                    partial: partial,
-                    lookahead: lookahead,
-                    range: lo...hi,
-                    pivot: i
-                )
-                
-                // Safety: Avoid crash if array index is out-of-bounds
-                guard partial.indices.contains(d2), lookahead.indices.contains(d2), lo >= 0 else { return nil }
-                
-                // Skip zero-count bins above the pivot
-                while d2 < hi, partial[d2] == 0 { d2 += 1 }
-                // Also skip trailing zero-count bins when the lookahead is empty
-                var count2 = lookahead[d2]
-                while count2 == 0, d2 > lo, partial[d2 - 1] > 0 {
-                    d2 -= 1
-                    count2 = lookahead[d2]
-                }
-
-                var first = box
-                var second = box
-                switch cutAxis {
-                case .r: first.r2 = d2; second.r1 = d2 + 1
-                case .g: first.g2 = d2; second.g1 = d2 + 1
-                case .b: first.b2 = d2; second.b1 = d2 + 1
-                }
-                first.invalidateCaches()
-                second.invalidateCaches()
-                return (first, second)
+            let (partial, total) = partialSums(histogram: histogram, box: box, axis: cutAxis)
+            guard total > 0 else { continue }
+            guard let pivot = (lo...hi).first(where: { partial[$0] > total / 2 }) else {
+                continue
             }
+            guard
+                let splitPoint = findSplitPoint(
+                    partial: partial,
+                    total: total,
+                    range: lo...hi,
+                    pivot: pivot
+                )
+            else {
+                continue
+            }
+
+            var first = box
+            var second = box
+            switch cutAxis {
+            case .r:
+                first.r2 = splitPoint
+                second.r1 = splitPoint + 1
+            case .g:
+                first.g2 = splitPoint
+                second.g1 = splitPoint + 1
+            case .b:
+                first.b2 = splitPoint
+                second.b1 = splitPoint + 1
+            }
+            first.invalidateCaches()
+            second.invalidateCaches()
+            return (first, second)
         }
         return nil
     }
@@ -203,24 +188,18 @@ enum MmcqEngine {
         box: VBox,
         axis: Axis
     ) -> (partial: [Int], total: Int) {
-        var partial = [Int](repeating: 0, count: histSize)
+        // Partial sums are indexed by one 5-bit channel, not by the full RGB
+        // histogram index.
+        var partial = [Int](repeating: 0, count: 1 << sigBits)
         var total = 0
 
         switch axis {
         case .r:
             for i in box.r1...box.r2 {
-                // Safety: Avoid crash if array index is out-of-bounds
-                guard partial.indices.contains(i) else { return (partial, 0) }
-                
                 var sum = 0
                 for j in box.g1...box.g2 {
                     for k in box.b1...box.b2 {
-                        let index = colorIndex(i, j, k)
-                        
-                        // Safety: Avoid crash if array index is out-of-bounds
-                        guard histogram.indices.contains(index) else { return (partial, 0) }
-                        
-                        sum += Int(histogram[index])
+                        sum += Int(histogram[colorIndex(i, j, k)])
                     }
                 }
                 total += sum
@@ -228,18 +207,10 @@ enum MmcqEngine {
             }
         case .g:
             for i in box.g1...box.g2 {
-                // Safety: Avoid crash if array index is out-of-bounds
-                guard partial.indices.contains(i) else { return (partial, 0) }
-                
                 var sum = 0
                 for j in box.r1...box.r2 {
                     for k in box.b1...box.b2 {
-                        let index = colorIndex(j, i, k)
-                        
-                        // Safety: Avoid crash if array index is out-of-bounds
-                        guard histogram.indices.contains(index) else { return (partial, 0) }
-                        
-                        sum += Int(histogram[index])
+                        sum += Int(histogram[colorIndex(j, i, k)])
                     }
                 }
                 total += sum
@@ -247,18 +218,10 @@ enum MmcqEngine {
             }
         case .b:
             for i in box.b1...box.b2 {
-                // Safety: Avoid crash if array index is out-of-bounds
-                guard partial.indices.contains(i) else { return (partial, 0) }
-                
                 var sum = 0
                 for j in box.r1...box.r2 {
                     for k in box.g1...box.g2 {
-                        let index = colorIndex(j, k, i)
-                        
-                        // Safety: Avoid crash if array index is out-of-bounds
-                        guard histogram.indices.contains(index) else { return (partial, 0) }
-                        
-                        sum += Int(histogram[index])
+                        sum += Int(histogram[colorIndex(j, k, i)])
                     }
                 }
                 total += sum
@@ -277,19 +240,53 @@ enum MmcqEngine {
         }
     }
 
+    private static func axesByDescendingWidth(box: VBox) -> [Axis] {
+        [
+            (axis: Axis.r, width: box.r2 - box.r1 + 1, order: 0),
+            (axis: Axis.g, width: box.g2 - box.g1 + 1, order: 1),
+            (axis: Axis.b, width: box.b2 - box.b1 + 1, order: 2),
+        ]
+        .sorted { lhs, rhs in
+            if lhs.width == rhs.width { return lhs.order < rhs.order }
+            return lhs.width > rhs.width
+        }
+        .map { $0.axis }
+    }
+
     private static func findSplitPoint(
         partial: [Int],
-        lookahead: [Int],
+        total: Int,
         range: ClosedRange<Int>,
         pivot: Int
-    ) -> Int {
+    ) -> Int? {
+        guard range.lowerBound < range.upperBound else { return nil }
+
         let left = pivot - range.lowerBound
         let right = range.upperBound - pivot
+        let preferred: Int
         if left <= right {
-            return min(range.upperBound - 1, pivot + right / 2)
+            preferred = min(range.upperBound - 1, pivot + right / 2)
         } else {
-            return max(range.lowerBound, pivot - 1 - left / 2)
+            preferred = max(range.lowerBound, pivot - 1 - left / 2)
         }
+
+        // A cut after `candidate` is valid only when both children contain
+        // pixels. Choosing the closest valid boundary preserves the existing
+        // geometric bias without ever creating an empty or inverted VBox.
+        var best: Int?
+        var bestDistance = Int.max
+        for candidate in range.lowerBound..<range.upperBound {
+            let firstCount = partial[candidate]
+            let secondCount = total - firstCount
+            guard firstCount > 0, secondCount > 0 else { continue }
+
+            let distance = abs(candidate - preferred)
+            if distance < bestDistance {
+                best = candidate
+                bestDistance = distance
+            }
+        }
+        return best
     }
 
     private enum Axis { case r, g, b }
@@ -343,12 +340,7 @@ enum MmcqEngine {
             for i in r1...r2 {
                 for j in g1...g2 {
                     for k in b1...b2 {
-                        let index = MmcqEngine.colorIndex(i, j, k)
-                        
-                        // Safety: Avoid crash if array index is out-of-bounds
-                        guard histogram.indices.contains(index) else { return 0 }
-                        
-                        npix += Int(histogram[index])
+                        npix += Int(histogram[MmcqEngine.colorIndex(i, j, k)])
                     }
                 }
             }
@@ -374,13 +366,7 @@ enum MmcqEngine {
             for i in r1...r2 {
                 for j in g1...g2 {
                     for k in b1...b2 {
-                        let index = MmcqEngine.colorIndex(i, j, k)
-                        
-                        // Safety: Avoid crash if array index is out-of-bounds
-                        guard histogram.indices.contains(index) else { return RGB(r: 0, g: 0, b: 0) }
-                        
-                        let value = Int(histogram[index])
-                        
+                        let value = Int(histogram[MmcqEngine.colorIndex(i, j, k)])
                         if value == 0 { continue }
                         ntot += value
                         rSum += Double(value) * (Double(i) + 0.5) * Double(mult)

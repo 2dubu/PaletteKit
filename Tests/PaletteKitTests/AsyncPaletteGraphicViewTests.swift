@@ -18,23 +18,33 @@ struct AsyncPaletteGraphicViewTests {
         let cgImage = AsyncTestSupport.makeSolidImage(rgb: (200, 50, 50))
 
         var resolveCount = 0
-        view.onSuccess = { _, _ in resolveCount += 1 }
+        let (firstEvents, firstEventContinuation) = AsyncStream<Void>.makeStream()
+        view.onSuccess = { _, _ in
+            resolveCount += 1
+            firstEventContinuation.yield()
+            firstEventContinuation.finish()
+        }
         view.cacheKey = AnyHashable("reload-force-test")
         view.imageSource = .cgImage(cgImage)
 
-        // Wait for first resolution.
-        let deadline1 = ContinuousClock.now.advanced(by: .seconds(5))
-        while ContinuousClock.now < deadline1, resolveCount < 1 {
-            try await Task.sleep(for: .milliseconds(50))
-        }
+        try await AsyncTestSupport.nextEvent(
+            from: firstEvents,
+            waitingFor: "the initial view load callback"
+        )
         #expect(resolveCount == 1)
 
         // Force reload — must trigger a second resolution.
-        view.reload()
-        let deadline2 = ContinuousClock.now.advanced(by: .seconds(5))
-        while ContinuousClock.now < deadline2, resolveCount < 2 {
-            try await Task.sleep(for: .milliseconds(50))
+        let (reloadEvents, reloadEventContinuation) = AsyncStream<Void>.makeStream()
+        view.onSuccess = { _, _ in
+            resolveCount += 1
+            reloadEventContinuation.yield()
+            reloadEventContinuation.finish()
         }
+        view.reload()
+        try await AsyncTestSupport.nextEvent(
+            from: reloadEvents,
+            waitingFor: "the forced reload callback"
+        )
         #expect(resolveCount == 2)
     }
 
@@ -43,16 +53,18 @@ struct AsyncPaletteGraphicViewTests {
         let view = AsyncPaletteGraphicView(frame: .init(x: 0, y: 0, width: 100, height: 100))
         let cgImage = AsyncTestSupport.makeSolidImage(rgb: (200, 50, 50))
 
-        var resolved = false
-        view.onSuccess = { _, _ in resolved = true }
+        let (events, eventContinuation) = AsyncStream<Void>.makeStream()
+        view.onSuccess = { _, _ in
+            eventContinuation.yield()
+            eventContinuation.finish()
+        }
         view.cacheKey = AnyHashable("success-test")
         view.imageSource = .cgImage(cgImage)
 
-        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
-        while ContinuousClock.now < deadline, !resolved {
-            try await Task.sleep(for: .milliseconds(50))
-        }
-        #expect(resolved == true)
+        try await AsyncTestSupport.nextEvent(
+            from: events,
+            waitingFor: "the view success callback"
+        )
     }
 
     @Test("cancel stops in-flight extraction")

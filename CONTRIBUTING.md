@@ -19,6 +19,9 @@ welcome.
 - macOS 14 or later for package development
 - iOS 17 or later as the minimum supported deployment target
 
+PaletteKit targets compile in Swift 6 language mode. Apps consuming the package
+may remain in Swift 5 language mode when built with Xcode 16 or later.
+
 ## Build and Test
 
 Resolve dependencies and build the package:

@@ -24,6 +24,110 @@ struct MmcqQuantizerTests {
         #expect(result.count == 2)
     }
 
+    @Test("an unsplittable 5-bit bin remains one populated cluster")
+    func unsplittableQuantizedBin() async throws {
+        // Each group contains distinct 8-bit colors, so the exact-color fast
+        // path does not apply. After MMCQ's three-bit shift, however, every
+        // color in the group occupies the same histogram coordinate. Such a
+        // VBox has pixel population but no valid boundary at which to split.
+        let cases: [(name: String, pixels: [PixelTriplet])] = [
+            (
+                "lowest histogram coordinate",
+                [
+                    PixelTriplet(r: 0, g: 0, b: 0),
+                    PixelTriplet(r: 1, g: 0, b: 0),
+                    PixelTriplet(r: 2, g: 0, b: 0),
+                ]
+            ),
+            (
+                "interior histogram coordinate",
+                [
+                    PixelTriplet(r: 232, g: 0, b: 0),
+                    PixelTriplet(r: 233, g: 0, b: 0),
+                    PixelTriplet(r: 234, g: 0, b: 0),
+                ]
+            ),
+            (
+                "highest histogram coordinate",
+                [
+                    PixelTriplet(r: 248, g: 0, b: 0),
+                    PixelTriplet(r: 249, g: 0, b: 0),
+                    PixelTriplet(r: 250, g: 0, b: 0),
+                ]
+            ),
+        ]
+
+        for testCase in cases {
+            let maxColors = 2
+            let occupiedBins = Set(testCase.pixels.map(reducedHistogramIndex))
+            #expect(
+                Set(testCase.pixels).count > maxColors,
+                "the fixture must bypass the exact-color fast path"
+            )
+            #expect(
+                occupiedBins.count == 1,
+                "the fixture must collapse into one reduced histogram bin"
+            )
+
+            let result = try await MmcqQuantizer().quantize(
+                pixels: testCase.pixels,
+                maxColors: maxColors
+            )
+
+            #expect(
+                result.count == 1,
+                "\(testCase.name) cannot produce two non-empty child boxes"
+            )
+            #expect(Set(result.map { reducedHistogramIndex($0.color) }) == occupiedBins)
+            expectPopulationIsPreserved(result, inputCount: testCase.pixels.count)
+        }
+    }
+
+    @Test("median cut falls back to an occupied axis")
+    func medianCutAxisFallback() async throws {
+        // The first cut separates the low-red pixel from the three high-red
+        // pixels. That child retains a wide red range even though red has only
+        // one occupied coordinate; green is the axis that can still split it.
+        let pixels = [
+            PixelTriplet(r: 0, g: 0, b: 0),
+            PixelTriplet(r: 248, g: 0, b: 0),
+            PixelTriplet(r: 248, g: 8, b: 0),
+            PixelTriplet(r: 248, g: 16, b: 0),
+        ]
+
+        let result = try await MmcqQuantizer().quantize(pixels: pixels, maxColors: 3)
+
+        #expect(result.count == 3)
+        expectPopulationIsPreserved(result, inputCount: pixels.count)
+    }
+
+    @Test("an unsplittable high-population box does not starve splittable boxes")
+    func unsplittableBoxDoesNotStarveQueue() async throws {
+        // The first three RGB888 colors share one 5-bit bin, making that VBox
+        // terminal and more populous than the remaining active VBox. Putting
+        // it straight back into the priority queue would select it repeatedly
+        // instead of splitting the two occupied bins that remain.
+        let pixels = [
+            PixelTriplet(r: 0, g: 0, b: 0),
+            PixelTriplet(r: 1, g: 0, b: 0),
+            PixelTriplet(r: 2, g: 0, b: 0),
+            PixelTriplet(r: 192, g: 0, b: 0),
+            PixelTriplet(r: 248, g: 0, b: 0),
+        ]
+        let maxColors = 3
+        let occupiedBins = Set(pixels.map(reducedHistogramIndex))
+        #expect(Set(pixels).count > maxColors)
+        #expect(occupiedBins.count == maxColors)
+
+        let result = try await MmcqQuantizer().quantize(
+            pixels: pixels,
+            maxColors: maxColors
+        )
+
+        #expect(result.count == occupiedBins.count)
+        expectPopulationIsPreserved(result, inputCount: pixels.count)
+    }
+
     @Test("unique-colors short circuit preserves counts")
     func uniqueShortCircuit() async throws {
         let pixels: [PixelTriplet] = [
@@ -82,5 +186,21 @@ struct MmcqQuantizerTests {
         await #expect(throws: CancellationError.self) {
             try await task.value
         }
+    }
+
+    private func expectPopulationIsPreserved(
+        _ result: [QuantizedColor],
+        inputCount: Int
+    ) {
+        #expect(result.allSatisfy { $0.population > 0 })
+        #expect(result.reduce(0) { $0 + $1.population } == inputCount)
+    }
+
+    private func reducedHistogramIndex(_ color: PixelTriplet) -> Int {
+        MmcqEngine.colorIndex(
+            Int(color.r) >> MmcqEngine.rShift,
+            Int(color.g) >> MmcqEngine.rShift,
+            Int(color.b) >> MmcqEngine.rShift
+        )
     }
 }

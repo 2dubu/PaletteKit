@@ -35,6 +35,60 @@ struct MetalMmcqQuantizerTests {
         }
     }
 
+    @Test("matches CPU for reduced-histogram terminal and fallback boxes")
+    func parityForReducedHistogramBoundaries() async throws {
+        guard MTLCreateSystemDefaultDevice() != nil else { return }
+
+        // Every case has more exact RGB888 colors than maxColors, so neither
+        // quantizer can take the exact-color fast path. The GPU-provided
+        // histogram must therefore exercise the same median-cut behavior as
+        // the CPU-built histogram.
+        let cases: [(pixels: [PixelTriplet], maxColors: Int)] = [
+            (
+                [
+                    PixelTriplet(r: 0, g: 0, b: 0),
+                    PixelTriplet(r: 1, g: 0, b: 0),
+                    PixelTriplet(r: 2, g: 0, b: 0),
+                ],
+                2
+            ),
+            (
+                [
+                    PixelTriplet(r: 0, g: 0, b: 0),
+                    PixelTriplet(r: 248, g: 0, b: 0),
+                    PixelTriplet(r: 248, g: 8, b: 0),
+                    PixelTriplet(r: 248, g: 16, b: 0),
+                ],
+                3
+            ),
+            (
+                [
+                    PixelTriplet(r: 0, g: 0, b: 0),
+                    PixelTriplet(r: 1, g: 0, b: 0),
+                    PixelTriplet(r: 2, g: 0, b: 0),
+                    PixelTriplet(r: 192, g: 0, b: 0),
+                    PixelTriplet(r: 248, g: 0, b: 0),
+                ],
+                3
+            ),
+        ]
+
+        for testCase in cases {
+            let cpu = try await MmcqQuantizer().quantize(
+                pixels: testCase.pixels,
+                maxColors: testCase.maxColors
+            )
+            let metal = try await MetalMmcqQuantizer().quantize(
+                pixels: testCase.pixels,
+                maxColors: testCase.maxColors
+            )
+
+            #expect(canonicalized(cpu) == canonicalized(metal))
+            #expect(metal.allSatisfy { $0.population > 0 })
+            #expect(metal.reduce(0) { $0 + $1.population } == testCase.pixels.count)
+        }
+    }
+
     @Test("respects cancellation before GPU dispatch")
     func cancellation() async throws {
         guard MTLCreateSystemDefaultDevice() != nil else { return }
@@ -51,6 +105,13 @@ struct MetalMmcqQuantizerTests {
         task.cancel()
         await #expect(throws: CancellationError.self) {
             try await task.value
+        }
+    }
+
+    private func canonicalized(_ colors: [QuantizedColor]) -> [QuantizedColor] {
+        colors.sorted {
+            ($0.population, $0.color.r, $0.color.g, $0.color.b)
+                > ($1.population, $1.color.r, $1.color.g, $1.color.b)
         }
     }
 }

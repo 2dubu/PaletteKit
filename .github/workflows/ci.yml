@@ -111,27 +111,100 @@ jobs:
           sudo xcode-select -s "$XCODE"
           xcodebuild -version
 
-      - name: Pick an iOS 26 iPhone simulator
+      - name: Pick and boot the latest iOS 26 iPhone simulator
         id: sim
         run: |
-          xcrun simctl list runtimes | grep iOS || true
-          UDID=$(xcrun simctl list devices available --json \
-            | jq -r '.devices | to_entries
-                      | map(select(.key | test("iOS-26")))
-                      | (.[0].value // [])
-                      | map(select(.name | startswith("iPhone")))
-                      | (.[0].udid // empty)')
+          RUNTIME_ID=$(xcrun simctl list runtimes available --json \
+            | jq -r '[.runtimes[]
+                      | select(.platform == "iOS")
+                      | select(.version | startswith("26."))
+                      | {identifier, parts: (.version | split(".") | map(tonumber))}]
+                     | sort_by(.parts)
+                     | last
+                     | .identifier // empty')
+          if [ -z "$RUNTIME_ID" ]; then
+            echo "No available iOS 26 runtime found:"
+            xcrun simctl list runtimes
+            exit 1
+          fi
+
+          DEVICE=$(xcrun simctl list devices available --json \
+            | jq -c --arg runtime "$RUNTIME_ID" '
+                (.devices[$runtime] // [])
+                | map(select(.isAvailable and (.name | startswith("iPhone"))))
+                | ((map(select(.name == "iPhone 17 Pro")) + .) | .[0] // empty)')
+          UDID=$(echo "$DEVICE" | jq -r '.udid // empty')
+          DEVICE_NAME=$(echo "$DEVICE" | jq -r '.name // empty')
           if [ -z "$UDID" ]; then
-            echo "No iOS 26 iPhone simulator available:"
+            echo "No iPhone simulator available for $RUNTIME_ID:"
             xcrun simctl list devices available
             exit 1
           fi
-          echo "Using simulator $UDID"
+
+          STATE=$(xcrun simctl list devices --json \
+            | jq -r --arg udid "$UDID" '
+                [.devices[][] | select(.udid == $udid) | .state][0] // empty')
+          if [ "$STATE" != "Booted" ]; then
+            xcrun simctl boot "$UDID"
+          fi
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl spawn "$UDID" launchctl print system > /dev/null
+
+          echo "Using $DEVICE_NAME ($UDID) on $RUNTIME_ID"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
-      - name: Test on iOS Simulator (core suite)
+      - name: Test async loader and view suites
+        timeout-minutes: 5
+        run: |
+          xcodebuild test \
+            -scheme PaletteKit-Package \
+            -only-testing:PaletteKitTests/AsyncTestSupportTests \
+            -only-testing:PaletteKitTests/AsyncPaletteGraphicLoaderTests \
+            -only-testing:PaletteKitTests/AsyncPaletteGraphicViewTests \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath "$RUNNER_TEMP/PaletteKitAsync.xcresult"
+
+      - name: Test remaining iOS core suite
+        timeout-minutes: 5
         run: |
           xcodebuild test \
             -scheme PaletteKit-Package \
             -only-testing:PaletteKitTests \
-            -destination "id=${{ steps.sim.outputs.udid }}"
+            -skip-testing:PaletteKitTests/AsyncTestSupportTests \
+            -skip-testing:PaletteKitTests/AsyncPaletteGraphicLoaderTests \
+            -skip-testing:PaletteKitTests/AsyncPaletteGraphicViewTests \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath "$RUNNER_TEMP/PaletteKitCore.xcresult"
+
+      - name: Collect simulator diagnostics
+        if: failure() || cancelled()
+        timeout-minutes: 2
+        env:
+          UDID: ${{ steps.sim.outputs.udid }}
+        run: |
+          DIAGNOSTICS="$RUNNER_TEMP/ios-diagnostics"
+          mkdir -p "$DIAGNOSTICS"
+          xcrun simctl list > "$DIAGNOSTICS/simctl-list.txt"
+          if [ -n "$UDID" ]; then
+            xcrun simctl spawn "$UDID" log show \
+              --style compact \
+              --last 20m \
+              > "$DIAGNOSTICS/device.log" 2>&1 || true
+            xcrun simctl diagnose \
+              -b \
+              --timeout=60 \
+              --output="$DIAGNOSTICS" \
+              --udid="$UDID" || true
+          fi
+
+      - name: Upload iOS test diagnostics
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-diagnostics
+          path: |
+            ${{ runner.temp }}/PaletteKitAsync.xcresult
+            ${{ runner.temp }}/PaletteKitCore.xcresult
+            ${{ runner.temp }}/ios-diagnostics
+          if-no-files-found: warn
+          retention-days: 7

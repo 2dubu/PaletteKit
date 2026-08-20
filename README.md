@@ -312,6 +312,11 @@ need to run it.
 - Xcode 16+
 - Swift 6.0 (strict concurrency)
 
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the
+development workflow, testing expectations, and pull request guidelines.
+
 ## Acknowledgements
 
 Thanks to [color-thief](https://github.com/lokesh/color-thief) by Lokesh Dhakar

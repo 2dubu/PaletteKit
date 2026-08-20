@@ -11,18 +11,67 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect code changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check code paths
+        id: diff
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            BASE_SHA="$PR_BASE_SHA"
+          else
+            BASE_SHA="$PUSH_BASE_SHA"
+          fi
+
+          if ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            echo "Base commit unavailable; running CI defensively."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if git diff --quiet "$BASE_SHA" "$GITHUB_SHA" -- \
+            .github/workflows \
+            Examples \
+            Package.swift \
+            Package.resolved \
+            Sources \
+            Tests; then
+            echo "Only documentation or repository metadata changed; skipping build and test jobs."
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Code, tests, package configuration, examples, or CI changed; running build and test jobs."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          fi
+
   test:
     name: Build & Test (iOS 17+ / Swift 6)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: macos-15
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Select latest Xcode
         run: |
-          XCODE=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1)
+          XCODE=$(find /Applications -maxdepth 1 -name 'Xcode_*.app' -print \
+            | sort -V \
+            | tail -n 1)
           if [ -z "$XCODE" ]; then
             echo "No Xcode installation found. Available:"
-            ls /Applications | grep -i xcode || true
+            find /Applications -maxdepth 1 -iname '*xcode*' -print
             exit 1
           fi
           echo "Using $XCODE"
@@ -41,17 +90,21 @@ jobs:
 
   ios-test:
     name: iOS Simulator Tests
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.code == 'true'
     runs-on: macos-15
-    if: github.event_name == 'pull_request'
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Select latest Xcode
         run: |
-          XCODE=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1)
+          XCODE=$(find /Applications -maxdepth 1 -name 'Xcode_*.app' -print \
+            | sort -V \
+            | tail -n 1)
           if [ -z "$XCODE" ]; then
             echo "No Xcode installation found. Available:"
-            ls /Applications | grep -i xcode || true
+            find /Applications -maxdepth 1 -iname '*xcode*' -print
             exit 1
           fi
           echo "Using $XCODE"

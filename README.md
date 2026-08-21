@@ -6,11 +6,11 @@
 [![Platforms](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2F2dubu%2FPaletteKit%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/2dubu/PaletteKit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[color-thief](https://github.com/lokesh/color-thief) reimagined for Apple —
-a modern, iOS-native palette extractor with a built-in palette-driven
-graphic primitive. Swift Package, SwiftUI- and UIKit-friendly: OKLCH
-perceptual quantization, Display P3 wide-gamut support, Semantic Swatches,
-async-only Sendable API.
+Extract dominant colors and render adaptive SwiftUI/UIKit graphics from any
+image — OKLCH, Display P3, Swift 6.
+
+PaletteKit also provides semantic swatches plus static, mesh, and animated
+graphics.
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/fd0f7b6b-25c6-4141-8ffb-52b25f7ed6f7" width="23%" alt="Demo: palette extraction (photo 1)" />

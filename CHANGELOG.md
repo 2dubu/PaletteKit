@@ -2,6 +2,14 @@
 
 All notable changes to PaletteKit are documented here.
 
+## 2.1.1
+
+### Fixed
+- Prevented MMCQ crashes when distinct 8-bit colors collapse into a single
+  5-bit histogram cell, leaving no valid median-cut boundary (#15, #17).
+- Unsplittable boxes no longer block queue progress, and median cut can fall
+  back to another occupied axis while preserving positive-population boxes.
+
 ## 2.1.0
 
 ### Added

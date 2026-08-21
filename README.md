@@ -36,7 +36,7 @@ graphics.
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/2dubu/PaletteKit", from: "2.1.0"),
+    .package(url: "https://github.com/2dubu/PaletteKit", from: "2.1.1"),
 ]
 ```
 

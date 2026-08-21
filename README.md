@@ -9,8 +9,8 @@
 Extract dominant colors and render adaptive SwiftUI/UIKit graphics from any
 image — OKLCH, Display P3, Swift 6.
 
-PaletteKit provides semantic swatches and static, mesh, and animated graphic
-primitives through an async, Sendable API.
+PaletteKit also provides semantic swatches plus static, mesh, and animated
+graphics.
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/fd0f7b6b-25c6-4141-8ffb-52b25f7ed6f7" width="23%" alt="Demo: palette extraction (photo 1)" />

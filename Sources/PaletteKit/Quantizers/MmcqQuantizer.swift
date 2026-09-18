@@ -53,7 +53,8 @@ enum MmcqEngine {
             histogram = working
         }
 
-        let initialBox = try VBox.from(pixels: pixels)
+        var initialBox = try VBox.from(pixels: pixels)
+        initialBox.cachePopulation(initialBox.count(histogram: histogram))
         var queue = PQueue<VBox>(compare: { $0.count(histogram: histogram) < $1.count(histogram: histogram) })
         queue.push(initialBox)
 
@@ -178,6 +179,8 @@ enum MmcqEngine {
             }
             first.invalidateCaches()
             second.invalidateCaches()
+            first.cachePopulation(partial[splitPoint])
+            second.cachePopulation(total - partial[splitPoint])
             return (first, second)
         }
         return nil
@@ -323,6 +326,10 @@ enum MmcqEngine {
                 bMin = min(bMin, b); bMax = max(bMax, b)
             }
             return VBox(r1: rMin, r2: rMax, g1: gMin, g2: gMax, b1: bMin, b2: bMax)
+        }
+
+        mutating func cachePopulation(_ population: Int) {
+            cachedCount = population
         }
 
         mutating func invalidateCaches() {

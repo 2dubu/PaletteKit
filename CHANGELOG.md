@@ -2,6 +2,12 @@
 
 All notable changes to PaletteKit are documented here.
 
+## Unreleased
+
+### Changed
+- Async palette graphics reuse image preprocessing between palette and swatch
+  extraction with the automatic and CPU quantizers, preserving separate color counts.
+
 ## 2.1.1
 
 ### Fixed

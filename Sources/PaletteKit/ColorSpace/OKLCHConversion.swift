@@ -2,9 +2,14 @@ import Accelerate
 import Foundation
 
 public enum OKLCHConversion {
-    public static func srgbToLinear(_ channel: UInt8) -> Double {
+    // sRGB and Display P3 share the same transfer function.
+    private static let linearizedChannels: [Double] = (0...255).map { channel in
         let s = Double(channel) / 255
         return s <= 0.04045 ? s / 12.92 : pow((s + 0.055) / 1.055, 2.4)
+    }
+
+    public static func srgbToLinear(_ channel: UInt8) -> Double {
+        linearizedChannels[Int(channel)]
     }
 
     public static func linearToSRGB(_ linear: Double) -> UInt8 {
@@ -56,8 +61,7 @@ public enum OKLCHConversion {
     }
 
     static func p3ToLinear(_ channel: UInt8) -> Double {
-        let s = Double(channel) / 255
-        return s <= 0.04045 ? s / 12.92 : pow((s + 0.055) / 1.055, 2.4)
+        linearizedChannels[Int(channel)]
     }
 
     static func linearRGBToOKLCH(lr: Double, lg: Double, lb: Double) -> OKLCH {

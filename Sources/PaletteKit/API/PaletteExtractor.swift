@@ -20,6 +20,13 @@ public struct PaletteExtractor: Sendable {
     private let sampler: PixelSampler
     private let builder: PaletteBuilder
 
+    // Paired CPU extractions differ only in colorCount.
+    private struct PreparedExtraction {
+        let buffer: PixelBuffer
+        let sampled: SampledPixels
+        var convertedPixels: [PixelTriplet]?
+    }
+
     /// Create a new extractor. Extractors are cheap: construct as needed.
     public init() {
         self.loader = PixelLoader()
@@ -44,6 +51,38 @@ public struct PaletteExtractor: Sendable {
         from source: ImageSource,
         options: ExtractionOptions = .init()
     ) async throws -> Palette {
+        var prepared: PreparedExtraction?
+        return try await palette(from: source, options: options, prepared: &prepared)
+    }
+
+    func paletteAndSwatches(
+        from source: ImageSource,
+        options: ExtractionOptions
+    ) async throws -> (palette: Palette, swatches: SwatchMap?) {
+        switch options.quantizer {
+        case .custom, .metal:
+            let palette = try await palette(from: source, options: options)
+            let swatches = try? await swatches(from: source, options: options)
+            return (palette, swatches)
+        case .auto, .cpu:
+            var prepared: PreparedExtraction?
+            let palette = try await palette(from: source, options: options, prepared: &prepared)
+            var swatchOptions = options
+            if swatchOptions.colorCount < 16 { swatchOptions.colorCount = 16 }
+            let swatchPalette = try? await self.palette(
+                from: source,
+                options: swatchOptions,
+                prepared: &prepared
+            )
+            return (palette, swatchPalette.map { SwatchClassifier().classify(palette: $0) })
+        }
+    }
+
+    private func palette(
+        from source: ImageSource,
+        options: ExtractionOptions,
+        prepared: inout PreparedExtraction?
+    ) async throws -> Palette {
         try validate(options: options)
         try Task.checkCancellation()
 
@@ -57,17 +96,27 @@ public struct PaletteExtractor: Sendable {
         let clock = ContinuousClock()
         let totalStart = clock.now
 
-        let (buffer, decodeDuration) = try measure {
-            try loader.load(source: source, options: options)
-        }
-        if collectTimings { timingsBuilder.set(decode: decodeDuration) }
-        try Task.checkCancellation()
+        let buffer: PixelBuffer
+        let sampled: SampledPixels
+        if let prepared {
+            buffer = prepared.buffer
+            sampled = prepared.sampled
+        } else {
+            let (loaded, decodeDuration) = try measure {
+                try loader.load(source: source, options: options)
+            }
+            buffer = loaded
+            if collectTimings { timingsBuilder.set(decode: decodeDuration) }
+            try Task.checkCancellation()
 
-        let (sampled, sampleDuration) = try measure {
-            try sampler.sample(buffer: buffer, options: options)
+            let (filtered, sampleDuration) = try measure {
+                try sampler.sample(buffer: buffer, options: options)
+            }
+            sampled = filtered
+            if collectTimings { timingsBuilder.set(sample: sampleDuration) }
+            try Task.checkCancellation()
+            prepared = PreparedExtraction(buffer: buffer, sampled: sampled)
         }
-        if collectTimings { timingsBuilder.set(sample: sampleDuration) }
-        try Task.checkCancellation()
 
         let outputColorSpace: ColorSpace = {
             switch options.colorSpace {
@@ -94,10 +143,15 @@ public struct PaletteExtractor: Sendable {
 
         let pixelsForQuantization: [PixelTriplet]
         if options.colorSpace == .oklch {
-            pixelsForQuantization = BatchConversion.pixelsToOKLCHScaled(
-                sampled.triplets,
-                sourceSpace: buffer.colorSpace
-            )
+            if let converted = prepared?.convertedPixels {
+                pixelsForQuantization = converted
+            } else {
+                pixelsForQuantization = BatchConversion.pixelsToOKLCHScaled(
+                    sampled.triplets,
+                    sourceSpace: buffer.colorSpace
+                )
+                prepared?.convertedPixels = pixelsForQuantization
+            }
         } else {
             pixelsForQuantization = sampled.triplets
         }

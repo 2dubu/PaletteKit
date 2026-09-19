@@ -63,6 +63,23 @@ public struct PaletteGraphic: View {
         }
     }
 
+    /// The actual gradient stop colors, ordered from lightest to darkest.
+    ///
+    /// Uses the same resolution as rendering, without creating an image.
+    /// There may be fewer stops than ``Configuration/colorCount`` requests
+    /// when no more eligible colors are available. Identical anchors remain
+    /// as two stops, so use distinct RGB values to detect a single-color
+    /// result or to decide whether a requested count is available:
+    ///
+    /// ```swift
+    /// let distinctCount = Set(graphic.resolvedStopColors.map(\.rgb)).count
+    /// ```
+    public var resolvedStopColors: [PaletteColor] {
+        PaletteGraphicRenderer.resolveStopColors(
+            palette: palette, swatches: swatches, configuration: configuration
+        )
+    }
+
     /// Render this graphic to a `UIImage` at the given logical size.
     /// Bypasses SwiftUI's view hierarchy. Result is rectangular — apply
     /// your own clipping (`UIBezierPath` mask, `CALayer.mask`, …) for

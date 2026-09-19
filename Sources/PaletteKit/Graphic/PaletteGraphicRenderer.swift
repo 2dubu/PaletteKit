@@ -37,14 +37,9 @@ internal enum PaletteGraphicRenderer {
             return cached
         }
 
-        let (center, edge) = resolveAnchors(
-            palette: palette, swatches: swatches,
-            strategy: configuration.swatchStrategy
-        )
         let stopColors = resolveStopColors(
             palette: palette, swatches: swatches,
-            center: center, edge: edge,
-            count: configuration.colorCount.rawValue
+            configuration: configuration
         )
         let extent = CGRect(origin: .zero, size: pixelSize)
 
@@ -65,6 +60,23 @@ internal enum PaletteGraphicRenderer {
         guard let cg = context.createCGImage(output, from: extent) else { return nil }
         cache.setObject(cg, forKey: cacheKey)
         return cg
+    }
+
+    /// Shared entry point for rendering and inspecting the resolved stops.
+    static func resolveStopColors(
+        palette: Palette,
+        swatches: SwatchMap?,
+        configuration: PaletteGraphic.Configuration
+    ) -> [PaletteColor] {
+        let (center, edge) = resolveAnchors(
+            palette: palette, swatches: swatches,
+            strategy: configuration.swatchStrategy
+        )
+        return resolveStopColors(
+            palette: palette, swatches: swatches,
+            center: center, edge: edge,
+            count: configuration.colorCount.rawValue
+        )
     }
 
     /// Resolves the gradient `center` and `edge` anchors for a strategy via

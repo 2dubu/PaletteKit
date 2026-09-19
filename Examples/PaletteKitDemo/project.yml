@@ -47,3 +47,24 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: "NO"
         CODE_SIGN_STYLE: Automatic
+
+  PaletteKitDemoTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: PaletteKitDemoTests
+    dependencies:
+      - target: PaletteKitDemo
+      - package: PaletteKit
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: "YES"
+
+schemes:
+  PaletteKitDemo:
+    build:
+      targets:
+        PaletteKitDemo: all
+    test:
+      targets:
+        - PaletteKitDemoTests

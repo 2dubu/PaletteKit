@@ -141,6 +141,62 @@ struct MmcqQuantizerTests {
         #expect(gray?.population == 2)
     }
 
+    @Test("repeated splits preserve child populations and output order", arguments: Channel.allCases)
+    func repeatedSplitPopulations(channel: Channel) throws {
+        let coordinates: [UInt8] = [0, 32, 64, 96, 128, 160, 192, 248]
+        let populations = [1, 3, 7, 11, 19, 23, 31, 37]
+        let colors = coordinates.map { pixel(on: channel, value: $0) }
+        let pixels = zip(colors, populations).flatMap { color, population in
+            Array(repeating: color, count: population)
+        }
+        let maxColors = 4
+        try #require(Set(colors).count > maxColors)
+
+        // Unequal populations make both split priorities visible in the ordered result.
+        let expected = [
+            QuantizedColor(color: pixel(on: channel, value: 182, other: 4), population: 54),
+            QuantizedColor(color: pixel(on: channel, value: 120, other: 4), population: 30),
+            QuantizedColor(color: pixel(on: channel, value: 252, other: 4), population: 37),
+            QuantizedColor(color: pixel(on: channel, value: 53, other: 4), population: 11),
+        ]
+        let result = try MmcqEngine.quantize(pixels: pixels, maxColors: maxColors)
+        #expect(result == expected)
+        expectPopulationIsPreserved(result, inputCount: pixels.count)
+
+        var histogram = [UInt32](repeating: 0, count: MmcqEngine.histSize)
+        for (color, population) in zip(colors, populations) {
+            histogram[reducedHistogramIndex(color)] = UInt32(population)
+        }
+        let histogramResult = try MmcqEngine.quantize(
+            pixels: colors,
+            maxColors: maxColors,
+            providedHistogram: histogram
+        )
+        #expect(histogramResult == expected)
+        #expect(histogramResult.reduce(0) { $0 + $1.population } == 132)
+    }
+
+    @Test("a terminal box uses the supplied histogram population")
+    func terminalBoxSuppliedPopulation() throws {
+        let pixels = [
+            PixelTriplet(r: 8, g: 16, b: 24),
+            PixelTriplet(r: 9, g: 16, b: 24),
+            PixelTriplet(r: 10, g: 16, b: 24),
+        ]
+        let maxColors = 2
+        try #require(Set(pixels).count > maxColors)
+        var histogram = [UInt32](repeating: 0, count: MmcqEngine.histSize)
+        histogram[reducedHistogramIndex(pixels[0])] = 37
+
+        let result = try MmcqEngine.quantize(
+            pixels: pixels,
+            maxColors: maxColors,
+            providedHistogram: histogram
+        )
+
+        #expect(result == [QuantizedColor(color: PixelTriplet(r: 8, g: 16, b: 24), population: 37)])
+    }
+
     @Test("empty input returns empty")
     func emptyInput() async throws {
         let result = try await MmcqQuantizer().quantize(pixels: [], maxColors: 5)
@@ -194,6 +250,20 @@ struct MmcqQuantizerTests {
     ) {
         #expect(result.allSatisfy { $0.population > 0 })
         #expect(result.reduce(0) { $0 + $1.population } == inputCount)
+    }
+
+    enum Channel: CaseIterable {
+        case red
+        case green
+        case blue
+    }
+
+    private func pixel(on channel: Channel, value: UInt8, other: UInt8 = 0) -> PixelTriplet {
+        switch channel {
+        case .red: return PixelTriplet(r: value, g: other, b: other)
+        case .green: return PixelTriplet(r: other, g: value, b: other)
+        case .blue: return PixelTriplet(r: other, g: other, b: value)
+        }
     }
 
     private func reducedHistogramIndex(_ color: PixelTriplet) -> Int {

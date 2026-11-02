@@ -59,7 +59,7 @@ struct CardLabView: View {
             direction: direction,
             linearStart: axis.start,
             linearEnd: axis.end,
-            colorCount: colorCount,
+            colorCount: colorOptions.selection(preserving: colorCount),
             swatchStrategy: strategy,
             grain: grain
         )
@@ -118,6 +118,10 @@ struct CardLabView: View {
         ResolvedColors(palette: palette, swatches: swatches, strategy: strategy)
     }
 
+    private var colorOptions: GraphicColorOptions {
+        GraphicColorOptions(palette: palette, swatches: swatches, strategy: strategy)
+    }
+
     var body: some View {
         let cp = resolvedColors
         VStack(spacing: 12) {
@@ -155,6 +159,9 @@ struct CardLabView: View {
         .background(Color(cp.background).opacity(0.55).ignoresSafeArea())
         .navigationTitle("Graphic Lab")
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: colorOptions, initial: true) { _, options in
+            colorCount = options.selection(preserving: colorCount)
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -187,10 +194,19 @@ struct CardLabView: View {
     }
 
     private var stopsPicker: some View {
-        Picker("Colors", selection: $colorCount) {
-            ForEach(ColorCount.allCases) { c in Text("\(c.rawValue)").tag(c) }
+        let options = colorOptions
+        return VStack(spacing: 4) {
+            GraphicColorCountPicker(selection: $colorCount, options: options)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if options.isSingleColor {
+                Text("The current combination produces a single color.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .accessibilityIdentifier("graphic.singleColor")
+            }
         }
-        .pickerStyle(.segmented)
     }
 
     private var strategyPicker: some View {

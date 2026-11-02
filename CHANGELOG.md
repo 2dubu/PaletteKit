@@ -5,12 +5,23 @@ All notable changes to PaletteKit are documented here.
 ## Unreleased
 
 ### Added
+- `PaletteGraphic.resolvedStopColors` exposes the actual ordered gradient stops
+  without rendering an image, including repeated anchors for single-color results.
 - Opt-in `SpatialPrototype` SPI for source-position-aware 3×3/4×4 mesh analysis
   and an iOS 18+ SwiftUI renderer. Existing palette-driven meshes are unchanged.
 - A local Debug comparison harness with synthetic inputs and positional metrics;
   the experimental API and sampling policy are not stable public contracts.
 - Demo Image Mesh comparison for picked photos, with matching 3×3/4×4 previews
   and PNG sharing of the experimental spatial result.
+
+### Changed
+- Async palette graphics reuse image preprocessing between palette and swatch
+  extraction with the automatic and CPU quantizers, preserving separate color counts.
+
+### Fixed
+- Graphic Lab enables only color counts supported by the resolved gradient,
+  preserves valid selections, adjusts unavailable selections, and explains
+  single-color results with all color-count options disabled.
 
 ## 2.1.1
 

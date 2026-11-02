@@ -132,8 +132,10 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
         let onFailureCallback = onFailure
         task = Task { [weak self] in
             do {
-                let palette = try await extractor.palette(from: context.image, options: context.options)
-                let swatches = try? await extractor.swatches(from: context.image, options: context.options)
+                let (palette, swatches) = try await extractor.paletteAndSwatches(
+                    from: context.image,
+                    options: context.options
+                )
                 try Task.checkCancellation()
                 guard let self else { return }
                 if let cache, context.isCacheable {
@@ -161,9 +163,12 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
     }
 
     /// Cancel any in-flight resolution. Safe to call repeatedly.
-    func cancel() {
-        task?.cancel()
+    @discardableResult
+    func cancel() -> Task<Void, Never>? {
+        let cancelled = task
+        cancelled?.cancel()
         task = nil
+        return cancelled
     }
 
     deinit {

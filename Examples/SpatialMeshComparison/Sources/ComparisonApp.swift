@@ -119,7 +119,7 @@ enum Comparison {
                     "spatialPoints": mesh.points.map { [$0.x, $0.y] }
                 ]
                 for (key, image) in [("legacy", legacy), ("spatial", spatial), ("legacyFixed", fixed)] {
-                    let sampled = try SpatialMeshAnalyzer.normalizedImage(.cgImage(image.cgImage!)).image
+                    let sampled = try resample(image.cgImage!, matching: normalized.image)
                     let actual = try pixels(sampled)
                     guard actual.count == target.count else { throw HarnessError.dimensions }
                     row[key + "MeanOKLabDistance"] = zip(actual, target).map { distance($0, $1) }.reduce(0, +) / Double(target.count)
@@ -184,6 +184,25 @@ enum Comparison {
                 return SIMD3(lch.l, lch.c * cos(angle), lch.c * sin(angle))
             }
         }
+    }
+
+    /// Metrics must use the reference's exact raster, even when its edge is
+    /// smaller than 128. Independently applying a maximum edge would enlarge
+    /// only the rendered side of a small-input comparison.
+    static func resample(_ image: CGImage, matching reference: CGImage) throws -> CGImage {
+        let width = reference.width, height = reference.height
+        guard let context = CGContext(data: nil, width: width, height: height,
+            bitsPerComponent: 8, bytesPerRow: width * 4,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)
+        else { throw HarnessError.image }
+        let bounds = CGRect(x: 0, y: 0, width: width, height: height)
+        context.setFillColor(CGColor(gray: 1, alpha: 1))
+        context.fill(bounds)
+        context.interpolationQuality = .high
+        context.draw(image, in: bounds)
+        guard let sampled = context.makeImage() else { throw HarnessError.image }
+        return sampled
     }
 
     static func distance(_ a: SIMD3<Double>, _ b: SIMD3<Double>) -> Double {

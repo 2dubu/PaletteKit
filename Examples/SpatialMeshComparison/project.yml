@@ -24,3 +24,17 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+  SpatialMeshComparisonTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: SpatialMeshComparison
+schemes:
+  SpatialMeshComparison:
+    build:
+      targets:
+        SpatialMeshComparison: all
+    test:
+      config: Debug
+      targets: [SpatialMeshComparisonTests]

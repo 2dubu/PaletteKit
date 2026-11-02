@@ -81,7 +81,8 @@ within one run; do not assume byte-identical baseline PNGs across processes.
 
 `metrics.json` records each condition, grid colors/points, extraction settings,
 output/sample dimensions, and per-image mean OKLab distance. Both rendered outputs
-are reduced to the same thumbnail dimensions as the reference. At each matching
+are resampled to the reference's exact width and height, including inputs smaller
+than 128px. At each matching
 pixel, sRGB is converted using PaletteKit's OKLCH conversion and then to OKLab
 (`a=C cos(h)`, `b=C sin(h)`); the Euclidean distance is averaged over the image.
 This is a positional similarity diagnostic, not perceptual preference or a
@@ -105,6 +106,9 @@ There are no elapsed-time, memory, real-device, held-out-set, or preference clai
 swift test --filter PaletteKitTests --filter PaletteKitInsightsTests
 xcodebuild test -scheme PaletteKit-Package -only-testing:PaletteKitTests \
   -destination 'id=SIMULATOR_UDID'
+xcodegen generate --spec Examples/SpatialMeshComparison/project.yml
+xcodebuild test -project Examples/SpatialMeshComparison/SpatialMeshComparison.xcodeproj \
+  -scheme SpatialMeshComparison -destination 'id=SIMULATOR_UDID' CODE_SIGNING_ALLOWED=NO
 ```
 
 Review the spatial input/sampling code and regression tests first, the iOS
@@ -112,3 +116,5 @@ comparison harness second, then these reproduction and measurement notes.
 Tests cover position swaps, all EXIF orientations and the URL path, white/alpha,
 linear-light averaging, tagged P3 conversion, tiny/portrait/landscape dimensions,
 invalid data, and actual iOS rendered corner orientation and aspect ratio.
+The comparison app's hosted tests additionally verify exact metric-raster sizes
+for small square, landscape, and portrait references, plus color orientation.

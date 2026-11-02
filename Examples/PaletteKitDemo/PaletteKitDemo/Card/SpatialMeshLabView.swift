@@ -65,7 +65,8 @@ struct SpatialMeshLabView: View {
         .navigationTitle("Image Mesh")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: imageData) { await load() }
-        .sheet(isPresented: $showShare) {
+        // Capture during body evaluation so the first presentation gets the new image.
+        .sheet(isPresented: $showShare) { [shareImage] in
             if let shareImage { ShareSheet(items: [shareImage]) }
         }
     }

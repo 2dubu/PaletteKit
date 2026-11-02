@@ -2,7 +2,7 @@
 
 All notable changes to PaletteKit are documented here.
 
-## Unreleased
+## 2.2.0
 
 ### Added
 - `PaletteGraphic.resolvedStopColors` for inspecting resolved gradient colors.

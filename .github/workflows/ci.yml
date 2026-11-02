@@ -88,6 +88,9 @@ jobs:
       - name: Test (unit suites — benchmarks opt-in)
         run: swift test --filter PaletteKitTests --filter PaletteKitInsightsTests
 
+      - name: Test comparison export isolation
+        run: python3 -m unittest discover -s Examples/SpatialMeshComparison/ScriptTests
+
   ios-test:
     name: iOS Simulator Tests
     needs: changes

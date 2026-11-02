@@ -8,10 +8,16 @@ fi
 simulator="$1"
 output_dir="$2"
 input_image="${3:-}"
+# Each run owns a fresh directory. Refuse reuse before building or touching the
+# simulator so old images and new metrics cannot be mistaken for one export.
+mkdir -p "$(dirname "$output_dir")"
+if ! mkdir "$output_dir"; then
+    echo "OUTPUT_DIR must be a new directory; choose a different path." >&2
+    exit 2
+fi
 example_dir="$(cd "$(dirname "$0")" && pwd)"
 derived_dir="$(mktemp -d "${TMPDIR:-/tmp}/palette-spatial.XXXXXX")"
 bundle_id="com.paletteKit.research.SpatialMeshComparison"
-mkdir -p "$output_dir"
 xcodegen generate --spec "$example_dir/project.yml"
 xcodebuild build -project "$example_dir/SpatialMeshComparison.xcodeproj" \
     -scheme SpatialMeshComparison -configuration Debug -destination "id=$simulator" \

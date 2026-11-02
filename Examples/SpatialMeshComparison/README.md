@@ -50,6 +50,9 @@ xcrun simctl list devices booted
 ./run-comparison.sh SIMULATOR_UDID /absolute/path/outside/repository /path/to/image.jpg
 ```
 
+OUTPUT_DIR must be a **new directory** for each run. An existing directory,
+including an empty one, is rejected before any build or simulator operation.
+This keeps old user-image results out of later synthetic-only exports.
 The script builds and runs the app, waits for `metrics.json`, and copies results.
 It resets only this app's prior generated comparison folder and optional input.
 The selected image and exported derivatives remain local. Do not publish private
@@ -104,6 +107,7 @@ There are no elapsed-time, memory, real-device, held-out-set, or preference clai
 
 ```sh
 swift test --filter PaletteKitTests --filter PaletteKitInsightsTests
+python3 -m unittest discover -s Examples/SpatialMeshComparison/ScriptTests
 xcodebuild test -scheme PaletteKit-Package -only-testing:PaletteKitTests \
   -destination 'id=SIMULATOR_UDID'
 xcodegen generate --spec Examples/SpatialMeshComparison/project.yml

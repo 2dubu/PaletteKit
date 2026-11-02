@@ -88,6 +88,9 @@ jobs:
       - name: Test (unit suites — benchmarks opt-in)
         run: swift test --filter PaletteKitTests --filter PaletteKitInsightsTests
 
+      - name: Test comparison export isolation
+        run: python3 -m unittest discover -s Examples/SpatialMeshComparison/ScriptTests
+
   ios-test:
     name: iOS Simulator Tests
     needs: changes
@@ -176,6 +179,18 @@ jobs:
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -resultBundlePath "$RUNNER_TEMP/PaletteKitCore.xcresult"
 
+      - name: Test spatial comparison metrics
+        timeout-minutes: 5
+        run: |
+          command -v xcodegen > /dev/null || brew install xcodegen
+          xcodegen generate --spec Examples/SpatialMeshComparison/project.yml
+          xcodebuild test \
+            -project Examples/SpatialMeshComparison/SpatialMeshComparison.xcodeproj \
+            -scheme SpatialMeshComparison \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath "$RUNNER_TEMP/SpatialMeshComparison.xcresult" \
+            CODE_SIGNING_ALLOWED=NO
+
       - name: Collect simulator diagnostics
         if: failure() || cancelled()
         timeout-minutes: 2
@@ -205,6 +220,7 @@ jobs:
           path: |
             ${{ runner.temp }}/PaletteKitAsync.xcresult
             ${{ runner.temp }}/PaletteKitCore.xcresult
+            ${{ runner.temp }}/SpatialMeshComparison.xcresult
             ${{ runner.temp }}/ios-diagnostics
           if-no-files-found: warn
           retention-days: 7

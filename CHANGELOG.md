@@ -5,17 +5,15 @@ All notable changes to PaletteKit are documented here.
 ## Unreleased
 
 ### Added
-- `PaletteGraphic.resolvedStopColors` exposes the actual ordered gradient stops
-  without rendering an image, including repeated anchors for single-color results.
+- `PaletteGraphic.resolvedStopColors` for inspecting resolved gradient colors.
+- Experimental image-positioned 3×3/4×4 meshes, with demo comparison and sharing.
 
 ### Changed
-- Async palette graphics reuse image preprocessing between palette and swatch
-  extraction with the automatic and CPU quantizers, preserving separate color counts.
+- Improve color conversion and quantization performance; reuse preprocessing for
+  async palette graphics.
 
 ### Fixed
-- Graphic Lab enables only color counts supported by the resolved gradient,
-  preserves valid selections, adjusts unavailable selections, and explains
-  single-color results with all color-count options disabled.
+- Graphic Lab disables unsupported color counts and handles single-color results.
 
 ## 2.1.1
 

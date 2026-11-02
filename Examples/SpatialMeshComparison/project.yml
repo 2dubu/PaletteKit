@@ -1,0 +1,40 @@
+name: SpatialMeshComparison
+options:
+  bundleIdPrefix: com.paletteKit.research
+  deploymentTarget:
+    iOS: "18.0"
+packages:
+  PaletteKit:
+    path: ../..
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    GENERATE_INFOPLIST_FILE: YES
+    CODE_SIGNING_ALLOWED: NO
+targets:
+  SpatialMeshComparison:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    dependencies:
+      - package: PaletteKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.paletteKit.research.SpatialMeshComparison
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+  SpatialMeshComparisonTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: SpatialMeshComparison
+schemes:
+  SpatialMeshComparison:
+    build:
+      targets:
+        SpatialMeshComparison: all
+    test:
+      config: Debug
+      targets: [SpatialMeshComparisonTests]

@@ -2,6 +2,14 @@
 
 All notable changes to PaletteKit are documented here.
 
+## Unreleased
+
+### Added
+- Opt-in `SpatialPrototype` SPI for source-position-aware 3×3/4×4 mesh analysis
+  and an iOS 18+ SwiftUI renderer. Existing palette-driven meshes are unchanged.
+- A local Debug comparison harness with synthetic inputs and positional metrics;
+  the experimental API and sampling policy are not stable public contracts.
+
 ## 2.1.1
 
 ### Fixed

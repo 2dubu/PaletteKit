@@ -31,6 +31,20 @@ if it isn't already present. Subsequent runs skip that step.
   lightVibrant / lightMuted).
 - Timing panel with per-stage durations when `collectTimings: true`.
 
+## Compare image-based meshes (iOS 18+)
+
+After picking an image, tap **Compare Image Mesh**. This screen shows the original,
+the existing palette layout, and the experimental source-positioned layout at the
+same aspect ratio and grid size. Switch between 3×3 and 4×4 and use **Share image
+layout** to export the new result as PNG. The existing Mesh Lab is unchanged.
+
+This comparison uses common sRGB/white-background preprocessing for both methods,
+independently of the main screen's extraction options. Analysis runs off the UI
+actor and is cancelled when leaving the screen. Small details and accents can fade;
+this is a fixed-grid prototype, not a photo reconstruction mode. See
+[the comparison harness](../SpatialMeshComparison/README.md) for reproducible inputs,
+measurement definitions, and current limitations.
+
 ## How it's wired
 
 - `project.yml` — XcodeGen spec (iOS 17+, Swift 6 strict concurrency, local

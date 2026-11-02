@@ -38,6 +38,14 @@ struct ContentView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
 
+                    if #available(iOS 18.0, *), let imageData, let uiImage {
+                        NavigationLink {
+                            SpatialMeshLabView(imageData: imageData, originalImage: uiImage)
+                        } label: {
+                            Label("Compare Image Mesh", systemImage: "rectangle.split.3x1")
+                        }
+                    }
+
                     resultStack
                         .opacity(isExtracting && hasResultToShow ? 0.5 : 1.0)
 

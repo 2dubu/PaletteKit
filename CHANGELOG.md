@@ -9,6 +9,8 @@ All notable changes to PaletteKit are documented here.
   and an iOS 18+ SwiftUI renderer. Existing palette-driven meshes are unchanged.
 - A local Debug comparison harness with synthetic inputs and positional metrics;
   the experimental API and sampling policy are not stable public contracts.
+- Demo Image Mesh comparison for picked photos, with matching 3×3/4×4 previews
+  and PNG sharing of the experimental spatial result.
 
 ## 2.1.1
 

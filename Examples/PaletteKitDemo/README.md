@@ -43,3 +43,18 @@ if it isn't already present. Subsequent runs skip that step.
 The generated `PaletteKitDemo.xcodeproj` is **not committed**. It is
 regenerated on every `make demo-app` from `project.yml`, so the source of
 truth is the YAML plus the Swift/plist files in this folder.
+
+## Graphic Lab regression tests
+
+The demo tests cover available color counts, selection correction, and hosted
+segmented-control updates using synthetic palettes. From the repo root:
+
+```sh
+xcodegen generate --spec Examples/PaletteKitDemo/project.yml
+xcodebuild test \
+  -project Examples/PaletteKitDemo/PaletteKitDemo.xcodeproj \
+  -scheme PaletteKitDemo \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+```
+
+Choose an installed simulator name or use `-destination 'id=<simulator-uuid>'`.

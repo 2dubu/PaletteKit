@@ -11,14 +11,12 @@ struct ExtractionTimingsBuilder {
     private var decode: Duration = .zero
     private var sample: Duration = .zero
     private var quantize: Duration = .zero
-    private var swatches: Duration?
     private var total: Duration = .zero
     private var quantizerUsed: String = ""
 
     mutating func set(decode value: Duration) { decode = value }
     mutating func set(sample value: Duration) { sample = value }
     mutating func set(quantize value: Duration) { quantize = value }
-    mutating func set(swatches value: Duration) { swatches = value }
     mutating func set(total value: Duration) { total = value }
     mutating func set(quantizerUsed value: String) { quantizerUsed = value }
 
@@ -27,7 +25,6 @@ struct ExtractionTimingsBuilder {
             decode: decode,
             sample: sample,
             quantize: quantize,
-            swatches: swatches,
             total: total,
             quantizerUsed: quantizerUsed
         )

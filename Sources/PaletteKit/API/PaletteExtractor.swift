@@ -127,15 +127,18 @@ public struct PaletteExtractor: Sendable {
         }()
 
         if sampled.triplets.isEmpty {
-            return try emptyPipeline(
-                options: options,
-                buffer: buffer,
-                colorSpaceUsed: outputColorSpace,
-                timingsBuilder: &timingsBuilder,
-                clock: clock,
-                totalStart: totalStart,
-                collectTimings: collectTimings
-            )
+            switch options.fallbackStrategy {
+            case .fail:
+                throw PaletteError.allPixelsFiltered
+            case .averageOnly, .relax:
+                let timings = collectTimings ? buildTimings(&timingsBuilder, clock: clock, totalStart: totalStart) : nil
+                return builder.averageFallback(
+                    buffer: buffer,
+                    quality: options.quality.strideValue,
+                    colorSpaceUsed: outputColorSpace,
+                    timings: timings
+                )
+            }
         }
 
         let quantizer = resolveQuantizer(options: options, pixelCount: sampled.triplets.count)
@@ -213,29 +216,6 @@ public struct PaletteExtractor: Sendable {
         if opts.colorCount < 16 { opts.colorCount = 16 }
         let palette = try await palette(from: source, options: opts)
         return SwatchClassifier().classify(palette: palette)
-    }
-
-    private func emptyPipeline(
-        options: ExtractionOptions,
-        buffer: PixelBuffer,
-        colorSpaceUsed: ColorSpace,
-        timingsBuilder: inout ExtractionTimingsBuilder,
-        clock: ContinuousClock,
-        totalStart: ContinuousClock.Instant,
-        collectTimings: Bool
-    ) throws -> Palette {
-        switch options.fallbackStrategy {
-        case .fail:
-            throw PaletteError.allPixelsFiltered
-        case .averageOnly, .relax:
-            let timings = collectTimings ? buildTimings(&timingsBuilder, clock: clock, totalStart: totalStart) : nil
-            return builder.averageFallback(
-                buffer: buffer,
-                quality: options.quality.strideValue,
-                colorSpaceUsed: colorSpaceUsed,
-                timings: timings
-            )
-        }
     }
 
     private func resolveQuantizer(options: ExtractionOptions, pixelCount: Int) -> any Quantizer {

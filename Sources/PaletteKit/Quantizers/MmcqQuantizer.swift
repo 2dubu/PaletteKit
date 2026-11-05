@@ -53,7 +53,7 @@ enum MmcqEngine {
             histogram = working
         }
 
-        var initialBox = try VBox.from(pixels: pixels)
+        var initialBox = VBox.from(pixels: pixels)
         initialBox.cachePopulation(initialBox.count(histogram: histogram))
         var queue = PQueue<VBox>(compare: { $0.count(histogram: histogram) < $1.count(histogram: histogram) })
         queue.push(initialBox)
@@ -177,8 +177,6 @@ enum MmcqEngine {
                 first.b2 = splitPoint
                 second.b1 = splitPoint + 1
             }
-            first.invalidateCaches()
-            second.invalidateCaches()
             first.cachePopulation(partial[splitPoint])
             second.cachePopulation(total - partial[splitPoint])
             return (first, second)
@@ -302,7 +300,6 @@ enum MmcqEngine {
         var b1: Int
         var b2: Int
         private var cachedCount: Int?
-        private var cachedVolume: Int?
 
         init(r1: Int, r2: Int, g1: Int, g2: Int, b1: Int, b2: Int) {
             self.r1 = r1
@@ -313,7 +310,7 @@ enum MmcqEngine {
             self.b2 = b2
         }
 
-        static func from(pixels: [PixelTriplet]) throws -> VBox {
+        static func from(pixels: [PixelTriplet]) -> VBox {
             var rMin = Int.max, rMax = 0
             var gMin = Int.max, gMax = 0
             var bMin = Int.max, bMax = 0
@@ -330,11 +327,6 @@ enum MmcqEngine {
 
         mutating func cachePopulation(_ population: Int) {
             cachedCount = population
-        }
-
-        mutating func invalidateCaches() {
-            cachedCount = nil
-            cachedVolume = nil
         }
 
         func volume() -> Int {

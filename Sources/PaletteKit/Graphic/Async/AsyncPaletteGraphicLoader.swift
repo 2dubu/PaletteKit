@@ -146,7 +146,7 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
             } catch is CancellationError {
                 return
             } catch {
-                guard let self else { return }
+                guard !Task.isCancelled, let self else { return }
                 self.phase = .failure(error)
                 onFailureCallback?(error)
             }
@@ -168,6 +168,7 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
         let cancelled = task
         cancelled?.cancel()
         task = nil
+        lastContext = nil
         return cancelled
     }
 

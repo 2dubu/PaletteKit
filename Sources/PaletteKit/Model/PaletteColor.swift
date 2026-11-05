@@ -8,8 +8,8 @@ import Foundation
 /// `textColor`, and a WCAG `contrast` block. All computations are deterministic
 /// and do not allocate.
 ///
-/// Values compare by full RGB equality regardless of population so they can be
-/// used as `Set` / `Dictionary` keys.
+/// Equality and hashing include `rgb`, `population`, and `proportion`. Compare
+/// ``rgb`` when only the displayed color should determine identity.
 public struct PaletteColor: Hashable, Sendable {
     /// The raw 8-bit RGB channels.
     public let rgb: RGB

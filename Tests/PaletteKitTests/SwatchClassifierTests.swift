@@ -42,8 +42,37 @@ struct SwatchClassifierTests {
             colorSpaceUsed: .sRGB
         )
         let map = SwatchClassifier().classify(palette: palette)
-        let allColors = SwatchRole.allCases.compactMap { map[$0]?.color }
+        let allColors = SwatchRole.allCases.compactMap { map[$0]?.color.rgb }
         #expect(Set(allColors).count == allColors.count)
+    }
+
+    @Test("duplicate RGB entries cannot occupy multiple roles")
+    func duplicateRGB() {
+        let dominant = PaletteColor(r: 232, g: 67, b: 147, population: 100, proportion: 2.0 / 3.0)
+        let duplicate = PaletteColor(rgb: dominant.rgb, population: 50, proportion: 1.0 / 3.0)
+        let palette = Palette(colors: [dominant, duplicate], colorSpaceUsed: .sRGB)
+
+        let map = SwatchClassifier().classify(palette: palette)
+        let assigned = SwatchRole.allCases.compactMap { map[$0]?.color }
+
+        #expect(assigned == [dominant])
+        #expect(map.vibrant?.color == dominant)
+    }
+
+    @Test("fallback skips every entry of an already assigned RGB")
+    func fallbackUsesDistinctRGB() {
+        let dominant = PaletteColor(r: 232, g: 67, b: 147, population: 100, proportion: 0.5)
+        let duplicate = PaletteColor(rgb: dominant.rgb, population: 60, proportion: 0.3)
+        let alternate = PaletteColor(r: 230, g: 60, b: 140, population: 40, proportion: 0.2)
+        let palette = Palette(colors: [dominant, duplicate, alternate], colorSpaceUsed: .sRGB)
+
+        let map = SwatchClassifier().classify(palette: palette)
+        let assigned = SwatchRole.allCases.compactMap { map[$0]?.color.rgb }
+
+        #expect(map.vibrant?.color == dominant)
+        #expect(map.muted?.color == alternate)
+        #expect(Set(assigned).count == assigned.count)
+        #expect(assigned.count == 2)
     }
 
     @Test("extractor.swatches returns a usable SwatchMap")

@@ -33,22 +33,22 @@ public struct SwatchClassifier: Sendable {
 
         ranked.sort { $0.score > $1.score }
 
-        var used = Set<PaletteColor>()
+        var used = Set<RGB>()
         var resolved: [SwatchRole: Swatch] = [:]
 
         for assignment in ranked {
-            if used.contains(assignment.color) {
+            if used.contains(assignment.color.rgb) {
                 if let fallback = Self.nextBestColor(
                     for: assignment.role,
                     colors: colors,
                     used: used,
                     maxPopulation: maxPopulation
                 ) {
-                    used.insert(fallback)
+                    used.insert(fallback.rgb)
                     resolved[assignment.role] = Self.makeSwatch(fallback, role: assignment.role)
                 }
             } else {
-                used.insert(assignment.color)
+                used.insert(assignment.color.rgb)
                 resolved[assignment.role] = Self.makeSwatch(assignment.color, role: assignment.role)
             }
         }
@@ -107,12 +107,12 @@ public struct SwatchClassifier: Sendable {
     private static func nextBestColor(
         for role: SwatchRole,
         colors: [PaletteColor],
-        used: Set<PaletteColor>,
+        used: Set<RGB>,
         maxPopulation: Int
     ) -> PaletteColor? {
         guard let target = targets.first(where: { $0.role == role }) else { return nil }
         var best: (color: PaletteColor, score: Double)?
-        for color in colors where !used.contains(color) {
+        for color in colors where !used.contains(color.rgb) {
             let candidateScore = score(color: color, target: target, maxPopulation: maxPopulation)
             if candidateScore > (best?.score ?? -.infinity), candidateScore > -.infinity {
                 best = (color, candidateScore)

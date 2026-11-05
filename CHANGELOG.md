@@ -2,6 +2,12 @@
 
 All notable changes to PaletteKit are documented here.
 
+## Unreleased
+
+### Fixed
+- Async palette cache keys preserve typed caller keys and stable image source identity.
+- Explicit reloads bypass cached palettes and replace them with newly extracted results.
+
 ## 2.2.0
 
 ### Added

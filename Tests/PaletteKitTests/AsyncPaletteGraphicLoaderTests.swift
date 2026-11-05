@@ -171,11 +171,11 @@ struct AsyncPaletteGraphicLoaderTests {
         #expect(a.storageKey != b.storageKey)
     }
 
-    @Test("ResolutionContext: storageKey contains image source discriminator")
+    @Test("ResolutionContext: storageKey retains the image source")
     func contextStorageKeyHasSource() throws {
         let url = URL(string: "https://example.com/img.jpg")!
         let ctx = ResolutionContext(image: .url(url), options: .init(), cacheKey: nil)
-        #expect(ctx.storageKey.hasPrefix("url:https://example.com/img.jpg"))
+        #expect(ctx.storageKey.source == .url(url.absoluteString))
     }
 
     @Test("ResolutionContext: different quality strides produce different keys")

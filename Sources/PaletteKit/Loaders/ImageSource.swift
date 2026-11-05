@@ -20,9 +20,8 @@ public enum ImageSource: Sendable {
 
 /// Interleaved 8-bit RGBA pixels, with optional padding between rows.
 ///
-/// `bytesPerRow` must accommodate `width * 4` bytes. Data must contain every
-/// pixel; padding after the last row is optional. Consumers validate the
-/// layout before reading bytes. This type does not change alpha encoding.
+/// `bytesPerRow` must be at least `width * 4`, and data must contain every
+/// pixel. Padding after the last row is optional.
 public struct PixelBuffer: Sendable {
     public let data: Data
     public let width: Int

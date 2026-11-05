@@ -28,7 +28,7 @@ public struct PaletteBuilder: Sendable {
         return Palette(colors: colors, colorSpaceUsed: colorSpaceUsed, timings: timings)
     }
 
-    /// Averages sampled RGB channels without changing their alpha encoding.
+    /// Averages sampled RGB channels.
     /// Returns an empty palette for empty or malformed RGBA buffer layouts.
     public func averageFallback(
         buffer: PixelBuffer,

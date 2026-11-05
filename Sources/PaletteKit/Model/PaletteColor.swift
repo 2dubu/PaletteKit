@@ -3,11 +3,6 @@ import Foundation
 /// A single color extracted from an image, including its population within the
 /// source palette and common presentation helpers.
 ///
-/// `PaletteColor` stores the raw RGB triple and exposes lazy, cached accessors for
-/// `hex`, `hsl`, `oklch`, `luminance`, `isDark`/`isLight`, a readable
-/// `textColor`, and a WCAG `contrast` block. All computations are deterministic
-/// and do not allocate.
-///
 /// Equality and hashing include `rgb`, `population`, and `proportion`. Compare
 /// ``rgb`` when only the displayed color should determine identity.
 public struct PaletteColor: Hashable, Sendable {

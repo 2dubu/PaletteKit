@@ -60,9 +60,7 @@ public final class AsyncPaletteGraphicView: UIView {
         didSet { applyConfigurationIfResolved() }
     }
 
-    /// Convenience access to `configuration.swatchStrategy`.
-    /// Assigning through either property updates the same setting; the
-    /// most recent assignment applies, including after resolution.
+    /// An alias for `configuration.swatchStrategy`. The last assignment wins.
     public var swatchStrategy: SwatchStrategy {
         get { configuration.swatchStrategy }
         set { configuration.swatchStrategy = newValue }

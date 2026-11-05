@@ -9,6 +9,13 @@ public struct PixelLoader: Sendable {
         source: ImageSource,
         options: ExtractionOptions
     ) throws -> PixelBuffer {
+        switch options.downsample {
+        case .automatic(let maxPixels) where maxPixels <= 0,
+             .maxEdge(let maxPixels) where maxPixels <= 0:
+            throw PaletteError.decodingFailed(reason: "Downsample limits must be positive.")
+        default:
+            break
+        }
         let cgImage = try resolveCGImage(from: source, options: options)
         try Task.checkCancellation()
         return try rasterize(cgImage: cgImage, options: options)

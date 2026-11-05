@@ -14,11 +14,14 @@ public struct SampledPixels: Sendable {
 public struct PixelSampler: Sendable {
     public init() {}
 
+    /// Samples RGBA pixels, respecting row padding.
+    /// Throws `PaletteError.decodingFailed` for a malformed buffer layout.
     public func sample(
         buffer: PixelBuffer,
         options: ExtractionOptions
     ) throws -> SampledPixels {
         try Task.checkCancellation()
+        try buffer.validateRGBA8Layout()
 
         var filters = SampledPixels.FiltersApplied(
             ignoreWhite: options.ignoreWhite,
@@ -57,7 +60,7 @@ public struct PixelSampler: Sendable {
             guard let base = raw.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return }
             var index = 0
             while index < pixelCount {
-                let offset = index * 4
+                let offset = buffer.byteOffset(ofPixel: index)
                 let r = base[offset]
                 let g = base[offset + 1]
                 let b = base[offset + 2]

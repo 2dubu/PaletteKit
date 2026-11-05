@@ -39,7 +39,9 @@ public enum FallbackStrategy: Sendable, Equatable {
 
 public enum Downsample: Sendable, Equatable {
     case disabled
+    /// A positive pixel budget. Nonpositive values fail during loading.
     case automatic(maxPixels: Int)
+    /// A positive edge limit. Nonpositive values fail during loading.
     case maxEdge(Int)
 
     public static let `default` = Downsample.automatic(maxPixels: 1_000_000)

@@ -2,25 +2,19 @@
 import Foundation
 import CoreGraphics
 
-/// Process-wide memoization cache for resolved palettes.
+/// In-memory cache for palettes and semantic swatches.
 ///
-/// `AsyncPaletteGraphic` and `AsyncPaletteGraphicView` consult this cache
-/// before triggering an extraction. Use ``PaletteCache/shared`` for the
-/// default cross-app store, or construct your own instance for tests / DI
-/// boundaries.
+/// Async graphic views use ``shared`` by default. Supply a separate instance
+/// to keep their cached results independent.
 ///
-/// Thread-safe via the underlying `NSCache`. Eviction is automatic under
-/// memory pressure; ``countLimit`` is an advisory count limit, as in
-/// `PaletteGraphicRenderer`'s internal cache, rather than a strict upper bound.
+/// Thread-safe through `NSCache`, with automatic eviction under memory pressure.
 public final class PaletteCache: @unchecked Sendable {
-    /// Process-wide shared cache used as the default for
-    /// ``AsyncPaletteGraphic`` and ``AsyncPaletteGraphicView``.
+    /// The default cache used by async graphic views.
     public static let shared = PaletteCache(countLimit: 100)
 
     /// Advisory entry-count limit for NSCache; not a strict maximum.
     public let countLimit: Int
 
-    /// Boxed entry — NSCache requires class types as values.
     private final class Entry {
         let palette: Palette
         let swatches: SwatchMap?

@@ -24,9 +24,8 @@ struct ResolutionContext: Hashable {
         self.storageKey = StorageKey(source: source, options: Self.optionsFingerprint(options), caller: cacheKey)
     }
 
-    /// Typed identity preserves caller-key equality without retaining source
-    /// bytes or decoded images in the cache. Data is digested once per context.
-    /// A caller key supplements source and extraction options.
+    /// A caller key supplements the source and extraction options.
+    /// Digests and weak references avoid retaining source images in the cache.
     struct StorageKey: Hashable {
         let source: SourceIdentity
         let options: String
@@ -57,8 +56,7 @@ struct ResolutionContext: Hashable {
     let storageKey: StorageKey
 
     private static func optionsFingerprint(_ options: ExtractionOptions) -> String {
-        // Compact format covering all observable fields. `collectTimings`
-        // intentionally skipped (cosmetic, doesn't affect output).
+        // Timing collection does not invalidate a cached palette.
         "c\(options.colorCount)" +
         "-q\(options.quality.strideValue)" +
         "-cs\(options.colorSpace.hashKey)" +
@@ -88,7 +86,6 @@ struct ResolutionContext: Hashable {
         lhs.storageKey == rhs.storageKey
     }
 
-    /// True when caller-supplied cacheKey OR URL source enables caching.
     var isCacheable: Bool {
         if cacheKey != nil { return true }
         if case .url = image { return true }

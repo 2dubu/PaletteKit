@@ -97,11 +97,10 @@ struct PaletteExtractorTests {
         #expect(palette.timings!.quantizerUsed == "MMCQ-CPU")
     }
 
-    @Test("custom quantizer is honored")
+    @Test("custom quantizer without preparation is honored")
     func customQuantizer() async throws {
         struct NoopQuantizer: Quantizer {
             let name = "NOOP"
-            func prepare() async throws {}
             func quantize(pixels: [PixelTriplet], maxColors _: Int) async throws -> [QuantizedColor] {
                 guard let first = pixels.first else { return [] }
                 return [QuantizedColor(color: first, population: pixels.count)]
@@ -119,7 +118,28 @@ struct PaletteExtractorTests {
             )
         )
         #expect(palette.count == 1)
+        #expect(palette.colors.first?.rgb == RGB(r: 10, g: 20, b: 30))
         #expect(palette.timings?.quantizerUsed == "NOOP")
+    }
+
+    @Test("custom preparation failure prevents quantization")
+    func customPreparationFailure() async throws {
+        struct FailingPreparation: Quantizer {
+            let name = "FailingPreparation"
+            func prepare() async throws { throw PaletteError.imageEmpty }
+            func quantize(pixels: [PixelTriplet], maxColors: Int) async throws -> [QuantizedColor] {
+                Issue.record("quantization must not start after preparation fails")
+                return []
+            }
+        }
+
+        let image = try makeSolidImage(color: (10, 20, 30), size: 16)
+        await #expect(throws: PaletteError.imageEmpty) {
+            _ = try await PaletteExtractor().palette(
+                from: .cgImage(image),
+                options: .init(quantizer: .custom(FailingPreparation()))
+            )
+        }
     }
 }
 

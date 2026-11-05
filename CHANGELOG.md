@@ -4,6 +4,11 @@ All notable changes to PaletteKit are documented here.
 
 ## Unreleased
 
+### Added
+- Palette-only initialization for `PaletteGraphic` and `PaletteGraphicView`
+  without an explicit `swatches: nil` argument.
+- A default no-op `Quantizer.prepare()` for custom quantizers that need no setup.
+
 ### Fixed
 - Honor `AsyncPaletteGraphicView.configuration.swatchStrategy`; the top-level
   `swatchStrategy` property now accesses the same setting, so the latest

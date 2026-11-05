@@ -1,7 +1,7 @@
 #if canImport(UIKit) && canImport(SwiftUI)
 import Testing
 import SwiftUI
-@testable import PaletteKit
+import PaletteKit
 
 @Suite("AsyncPaletteGraphicTransition")
 struct AsyncPaletteGraphicTransitionTests {
@@ -20,16 +20,33 @@ struct AsyncPaletteGraphicTransitionTests {
         #expect(AsyncPaletteGraphicTransition.extraSlow.duration == 0.50)
     }
 
-    @Test(".custom honors explicit duration parameter")
+    @Test("legacy custom duration preserves metadata and equality")
     func customAnimation() {
-        let t = AsyncPaletteGraphicTransition.custom(.easeInOut(duration: 0.42), duration: 0.42)
+        let animation = Animation.easeInOut(duration: 0.42)
+        let t = AsyncPaletteGraphicTransition.custom(animation, duration: 0.42)
         #expect(t.duration == 0.42)
+        #expect(t.animation == animation)
+        #expect(t != .custom(animation, duration: 0.20))
+        #expect(t == .custom(animation, duration: 0.42))
     }
 
-    @Test(".custom defaults duration to 0.20 when omitted")
+    @Test("omitting duration preserves animation and legacy defaults")
     func customAnimationDefaultDuration() {
-        let t = AsyncPaletteGraphicTransition.custom(.easeInOut(duration: 0.42))
+        let animation = Animation.easeInOut(duration: 0.42)
+        let t = AsyncPaletteGraphicTransition.custom(animation)
         #expect(t.duration == 0.20)
+        #expect(t.animation == animation)
+        #expect(t == .custom(animation, duration: 0.20))
+    }
+
+    @Test("custom factory remains an unambiguous function reference")
+    func customFunctionReference() {
+        let factory = AsyncPaletteGraphicTransition.custom
+        let animation = Animation.linear(duration: 0.42)
+        let result = factory(animation, 0.7)
+        #expect(result.animation == animation)
+        #expect(result.duration == 0.7)
+        #expect(result == .custom(animation, duration: 0.7))
     }
 
     @Test("environment default is .normal")

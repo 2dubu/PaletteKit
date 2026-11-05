@@ -13,6 +13,8 @@ All notable changes to PaletteKit are documented here.
 - Honor `AsyncPaletteGraphicView.configuration.swatchStrategy`; the top-level
   `swatchStrategy` property now accesses the same setting, so the latest
   assignment through either property applies.
+- Correct custom transition documentation: timing comes from the animation;
+  the separate optional duration remains compatibility metadata.
 
 ## 2.2.0
 

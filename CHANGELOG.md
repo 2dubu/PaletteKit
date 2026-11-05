@@ -2,6 +2,13 @@
 
 All notable changes to PaletteKit are documented here.
 
+## Unreleased
+
+### Fixed
+- Prevent swatch roles from reusing the same RGB color when palette entries
+  have different population metadata. `PaletteColor` equality and hashing
+  continue to include population and proportion.
+
 ## 2.2.0
 
 ### Added

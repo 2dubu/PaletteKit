@@ -79,7 +79,6 @@ struct AsyncPaletteLifecycleTests {
 
         view.imageSource = nil
         #expect(view.subviews == [placeholder])
-        // Clearing the source must also allow that same image to resolve again.
         try await resolve(view, image: image)
         #expect(view.subviews.contains { $0 is PaletteGraphicView })
 

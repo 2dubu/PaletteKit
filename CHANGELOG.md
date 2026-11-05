@@ -2,6 +2,13 @@
 
 All notable changes to PaletteKit are documented here.
 
+## Unreleased
+
+### Fixed
+- Honor `AsyncPaletteGraphicView.configuration.swatchStrategy`; the top-level
+  `swatchStrategy` property now accesses the same setting, so the latest
+  assignment through either property applies.
+
 ## 2.2.0
 
 ### Added

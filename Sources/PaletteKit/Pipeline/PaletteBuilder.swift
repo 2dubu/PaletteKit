@@ -28,6 +28,8 @@ public struct PaletteBuilder: Sendable {
         return Palette(colors: colors, colorSpaceUsed: colorSpaceUsed, timings: timings)
     }
 
+    /// Averages sampled RGB channels.
+    /// Returns an empty palette for empty or malformed RGBA buffer layouts.
     public func averageFallback(
         buffer: PixelBuffer,
         quality: Int,
@@ -35,7 +37,7 @@ public struct PaletteBuilder: Sendable {
         timings: ExtractionTimings? = nil
     ) -> Palette {
         let pixelCount = buffer.pixelCount
-        guard pixelCount > 0 else {
+        guard pixelCount > 0, (try? buffer.validateRGBA8Layout()) != nil else {
             return Palette(colors: [], colorSpaceUsed: colorSpaceUsed, timings: timings)
         }
         var rTotal = 0
@@ -48,7 +50,7 @@ public struct PaletteBuilder: Sendable {
             let stride = max(1, quality)
             var index = 0
             while index < pixelCount {
-                let offset = index * 4
+                let offset = buffer.byteOffset(ofPixel: index)
                 rTotal += Int(base[offset])
                 gTotal += Int(base[offset + 1])
                 bTotal += Int(base[offset + 2])

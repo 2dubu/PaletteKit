@@ -2,6 +2,15 @@
 
 All notable changes to PaletteKit are documented here.
 
+## Unreleased
+
+### Fixed
+- Respect row padding when sampling and averaging public pixel buffers; reject
+  malformed layouts before reading bytes. The nonthrowing average API returns
+  an empty palette for invalid layouts.
+- Reject nonpositive downsample limits with an error instead of attempting an
+  invalid conversion or silently replacing the limit.
+
 ## 2.2.0
 
 ### Added

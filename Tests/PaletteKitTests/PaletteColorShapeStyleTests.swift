@@ -15,13 +15,14 @@ struct PaletteColorShapeStyleTests {
         #expect(resolved.opacity == 1)
     }
 
-    @Test("White resolves to (1, 1, 1, 1)")
+    @Test("White resolves within one Float ULP of (1, 1, 1, 1)")
     func resolveWhite() {
         let color = PaletteColor(r: 255, g: 255, b: 255)
         let resolved = color.resolve(in: EnvironmentValues())
-        #expect(resolved.red == 1)
-        #expect(resolved.green == 1)
-        #expect(resolved.blue == 1)
+        // iOS 17.5 rounds sRGB white to 0.99999994.
+        #expect(abs(resolved.red - 1) <= Float.ulpOfOne)
+        #expect(abs(resolved.green - 1) <= Float.ulpOfOne)
+        #expect(abs(resolved.blue - 1) <= Float.ulpOfOne)
         #expect(resolved.opacity == 1)
     }
 

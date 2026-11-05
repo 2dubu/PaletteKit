@@ -11,7 +11,7 @@ public struct PixelLoader: Sendable {
     ) throws -> PixelBuffer {
         let cgImage = try resolveCGImage(from: source, options: options)
         try Task.checkCancellation()
-        return try rasterize(cgImage: cgImage, options: options)
+        return try rasterize(cgImage: cgImage)
     }
 
     private func resolveCGImage(
@@ -60,7 +60,7 @@ public struct PixelLoader: Sendable {
         guard let raw = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
             throw PaletteError.decodingFailed(reason: "CGImageSource could not decode image.")
         }
-        return try applyOrientation(orientation, to: raw, respect: options.autoOrient)
+        return applyOrientation(orientation, to: raw)
     }
 
     private func thumbnailTargetPixels(options: ExtractionOptions) -> Int? {
@@ -110,10 +110,7 @@ public struct PixelLoader: Sendable {
         return context.makeImage() ?? cgImage
     }
 
-    private func rasterize(
-        cgImage: CGImage,
-        options _: ExtractionOptions
-    ) throws -> PixelBuffer {
+    private func rasterize(cgImage: CGImage) throws -> PixelBuffer {
         let width = cgImage.width
         let height = cgImage.height
         guard width > 0, height > 0 else { throw PaletteError.imageEmpty }
@@ -177,10 +174,9 @@ public struct PixelLoader: Sendable {
 
     private func applyOrientation(
         _ orientation: CGImagePropertyOrientation,
-        to cgImage: CGImage,
-        respect: Bool
-    ) throws -> CGImage {
-        guard respect, orientation != .up else { return cgImage }
+        to cgImage: CGImage
+    ) -> CGImage {
+        guard orientation != .up else { return cgImage }
         let width = cgImage.width
         let height = cgImage.height
         let rotated: (Int, Int) = {

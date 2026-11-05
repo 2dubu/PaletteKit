@@ -31,9 +31,12 @@ public enum OKLCHConversion {
         let pr = p3ToLinear(rgb.r)
         let pg = p3ToLinear(rgb.g)
         let pb = p3ToLinear(rgb.b)
-        let lr = 0.822_461_969_6 * pr + 0.177_538_030_4 * pg + 0.000_000_000_0 * pb
-        let lg = 0.033_194_199_2 * pr + 0.966_805_800_8 * pg + 0.000_000_000_0 * pb
-        let lb = 0.017_082_837_5 * pr + 0.072_397_031_7 * pg + 0.910_520_130_8 * pb
+        // Linear Display P3 -> XYZ D65 -> linear sRGB (CSS Color 4).
+        // Keep signed and above-one channels until OKLab conversion: clipping
+        // here would discard the part of Display P3 outside the sRGB gamut.
+        let lr = 1.224_940_176_3 * pr - 0.224_940_176_3 * pg
+        let lg = -0.042_056_954_7 * pr + 1.042_056_954_7 * pg
+        let lb = -0.019_637_554_6 * pr - 0.078_636_045_6 * pg + 1.098_273_600_1 * pb
         return linearRGBToOKLCH(lr: lr, lg: lg, lb: lb)
     }
 

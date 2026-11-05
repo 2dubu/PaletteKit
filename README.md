@@ -214,14 +214,24 @@ so the decoder can mmap them directly.
 
 ## Color space handling
 
-PaletteKit keeps palette colors in the source color space
-(`CGImage.colorSpace`): Display P3 input → Display P3 output. OKLCH is used
-only internally during quantization for perceptual uniformity.
+With the default `.oklch` option, PaletteKit detects the source color space
+(`CGImage.colorSpace`) and uses the matching sRGB or Display P3 conversion
+for perceptual quantization. Quantized colors are converted to
+8-bit sRGB, with out-of-gamut channels clamped. Display P3 input does not
+produce Display P3 output through the default pipeline or UI adapters.
 
 ```swift
 let palette = try await extractor.palette(from: .url(hdrPhotoURL))
-palette.colorSpaceUsed  // .displayP3 on an iPhone HEIC, .sRGB elsewhere
+palette.colorSpaceUsed  // Detected input space: .displayP3 or .sRGB
 ```
+
+In this mode, `colorSpaceUsed` describes the input; it is not an output profile.
+Direct `.sRGB` and `.displayP3` modes quantize rasterized channels
+without converting between RGB spaces; see the
+[color-space guide](PaletteKit.docc/ColorSpaces.md) for their contracts.
+
+If filtering removes every sampled pixel and the average fallback is used,
+it averages the rasterized source channels without converting them to sRGB.
 
 ## CPU vs Metal: choose by goal, not by image size
 

@@ -2,6 +2,13 @@
 
 All notable changes to PaletteKit are documented here.
 
+## Unreleased
+
+### Fixed
+- Correct Display P3-to-OKLCH conversion to use the P3-to-sRGB matrix direction
+  while preserving out-of-gamut intermediate values. Clarify that OKLCH
+  quantization returns sRGB colors, and document the raw-channel average fallback.
+
 ## 2.2.0
 
 ### Added

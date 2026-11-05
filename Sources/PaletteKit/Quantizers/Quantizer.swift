@@ -36,5 +36,5 @@ public protocol Quantizer: Sendable {
 }
 
 public extension Quantizer {
-    func prepare() async throws {}
+    func prepare() {}
 }

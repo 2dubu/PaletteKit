@@ -102,7 +102,6 @@ public final class AsyncPaletteGraphicView: UIView {
         v.backgroundColor = .clear
         return v
     }()
-    private var lastContext: ResolutionContext?
 
     // MARK: - Init
 
@@ -127,8 +126,8 @@ public final class AsyncPaletteGraphicView: UIView {
         let context = ResolutionContext(
             image: imageSource, options: extractionOptions, cacheKey: cacheKey
         )
-        lastContext = context
         loader.forceLoad(context: context, cache: cache)
+        showPlaceholderIfLoading()
     }
 
     /// Cancel any in-flight palette extraction. Safe to call repeatedly.
@@ -143,26 +142,36 @@ public final class AsyncPaletteGraphicView: UIView {
 
     private func bindLoader() {
         loader.onFailure = { [weak self] error in
+            self?.showPlaceholder()
             self?.onFailure?(error)
         }
         loader.onSuccess = { [weak self] palette, swatches, fromCache in
-            self?.onSuccess?(palette, swatches)
             self?.handleSuccess(palette: palette, swatches: swatches, fromCache: fromCache)
+            self?.onSuccess?(palette, swatches)
         }
     }
 
     private func reloadIfNeeded() {
         guard let imageSource else {
             cancel()
-            lastContext = nil
+            showPlaceholder()
             return
         }
         let context = ResolutionContext(
             image: imageSource, options: extractionOptions, cacheKey: cacheKey
         )
-        if context == lastContext { return }
-        lastContext = context
         loader.load(context: context, cache: cache)
+        showPlaceholderIfLoading()
+    }
+
+    private func showPlaceholderIfLoading() {
+        if case .loading = loader.phase { showPlaceholder() }
+    }
+
+    private func showPlaceholder() {
+        graphicView?.removeFromSuperview()
+        graphicView = nil
+        installPlaceholder(placeholderView ?? defaultPlaceholder)
     }
 
     private func handleSuccess(palette: Palette, swatches: SwatchMap?, fromCache: Bool) {

@@ -2,6 +2,13 @@
 
 All notable changes to PaletteKit are documented here.
 
+## Unreleased
+
+### Fixed
+- Cancelled async palette requests no longer report late failures and can be restarted.
+- UIKit async graphics show their placeholder while loading, after failure, or after
+  clearing the source, and preserve source changes made by completion callbacks.
+
 ## 2.2.0
 
 ### Added

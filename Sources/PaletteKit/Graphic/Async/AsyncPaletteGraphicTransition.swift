@@ -8,6 +8,7 @@ import SwiftUI
 /// UIKit consumers configure ``AsyncPaletteGraphicView/transition`` directly.
 public struct AsyncPaletteGraphicTransition: Equatable, Sendable {
     public let animation: Animation
+    /// Duration metadata. Rendering uses the timing in `animation`.
     public let duration: TimeInterval
 
     private init(animation: Animation, duration: TimeInterval) {
@@ -24,9 +25,13 @@ public struct AsyncPaletteGraphicTransition: Equatable, Sendable {
     /// 0.50s linear cross-fade.
     public static let extraSlow: Self = .init(animation: .linear(duration: 0.50), duration: 0.50)
 
-    /// Custom animation. The reported `duration` falls back to 0.20s when
-    /// the underlying `Animation` does not expose a numeric duration; this
-    /// only affects UIKit's `UIView.transition(...)` timing fallback.
+    /// Uses the supplied animation and its timing:
+    ///
+    /// ```swift
+    /// .custom(.easeInOut(duration: 0.42))
+    /// ```
+    ///
+    /// The optional `duration` is metadata and does not affect rendering.
     public static func custom(_ animation: Animation,
                               duration: TimeInterval = 0.20) -> Self {
         .init(animation: animation, duration: duration)

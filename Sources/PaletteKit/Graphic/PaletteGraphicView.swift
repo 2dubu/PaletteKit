@@ -37,9 +37,11 @@ public final class PaletteGraphicView: UIView {
     private var lastRenderedSize: CGSize = .zero
     private var lastRenderedScale: CGFloat = 0
 
+    /// Creates a graphic from a palette, optionally using classified swatches.
+    /// Omit `swatches` to choose gradient colors directly from the palette.
     public init(
         palette: Palette,
-        swatches: SwatchMap?,
+        swatches: SwatchMap? = nil,
         configuration: PaletteGraphic.Configuration = .init()
     ) {
         self.palette = palette

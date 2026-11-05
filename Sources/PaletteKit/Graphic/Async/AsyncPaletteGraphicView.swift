@@ -60,11 +60,10 @@ public final class AsyncPaletteGraphicView: UIView {
         didSet { applyConfigurationIfResolved() }
     }
 
-    /// Swatch strategy used when building the rendered graphic.
-    /// Exposed as a top-level property for ergonomics; folded into
-    /// `configuration` before constructing the inner view.
-    public var swatchStrategy: SwatchStrategy = .vibrant {
-        didSet { applyConfigurationIfResolved() }
+    /// An alias for `configuration.swatchStrategy`. The last assignment wins.
+    public var swatchStrategy: SwatchStrategy {
+        get { configuration.swatchStrategy }
+        set { configuration.swatchStrategy = newValue }
     }
 
     /// Cache consulted before starting an extraction. Set to `nil` to
@@ -166,10 +165,8 @@ public final class AsyncPaletteGraphicView: UIView {
     }
 
     private func handleSuccess(palette: Palette, swatches: SwatchMap?, fromCache: Bool) {
-        var cfg = configuration
-        cfg.swatchStrategy = swatchStrategy
         let resolved = PaletteGraphicView(
-            palette: palette, swatches: swatches, configuration: cfg
+            palette: palette, swatches: swatches, configuration: configuration
         )
         resolved.translatesAutoresizingMaskIntoConstraints = false
 
@@ -200,11 +197,7 @@ public final class AsyncPaletteGraphicView: UIView {
     }
 
     private func applyConfigurationIfResolved() {
-        graphicView?.configuration = {
-            var cfg = configuration
-            cfg.swatchStrategy = swatchStrategy
-            return cfg
-        }()
+        graphicView?.configuration = configuration
     }
 
     private func installPlaceholder(_ view: UIView) {

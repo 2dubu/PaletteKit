@@ -25,10 +25,15 @@ public struct QuantizedColor: Hashable, Sendable {
 public protocol Quantizer: Sendable {
     var name: String { get }
 
+    /// Prepares resources before quantization. The default implementation does nothing.
     func prepare() async throws
 
     func quantize(
         pixels: [PixelTriplet],
         maxColors: Int
     ) async throws -> [QuantizedColor]
+}
+
+public extension Quantizer {
+    func prepare() {}
 }

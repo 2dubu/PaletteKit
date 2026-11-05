@@ -1,5 +1,6 @@
 #if canImport(UIKit)
 import Foundation
+import CryptoKit
 import SwiftUI
 
 /// Identifies a resolution attempt by image source + extraction options +
@@ -14,33 +15,48 @@ struct ResolutionContext: Hashable {
         self.image = image
         self.options = options
         self.cacheKey = cacheKey
-    }
-
-    /// Stable, debuggable string identity used for `PaletteCache` lookups
-    /// and for SwiftUI `.task(id:)` invalidation. Composes image source
-    /// discriminator + URL/identity + ExtractionOptions fingerprint +
-    /// optional caller-supplied cache key.
-    ///
-    /// Example: `"url:https://example.com/img.jpg|opts:c10-q10-cs2-iwhT-..|key:itemId"`
-    var storageKey: String {
-        var parts: [String] = []
+        let source: SourceIdentity
         switch image {
-        case .url(let url):
-            parts.append("url:\(url.absoluteString)")
-        case .data(let data):
-            // Pointer identity — caller supplies stable cacheKey for content dedup.
-            parts.append("data:\(ObjectIdentifier(data as NSData).debugDescription)")
-        case .cgImage(let img):
-            parts.append("cgimage:\(ObjectIdentifier(img).debugDescription)")
+        case .url(let url): source = .url(url.absoluteString)
+        case .data(let data): source = .data(SHA256.hash(data: data))
+        case .cgImage(let image): source = .cgImage(ImageIdentity(image))
         }
-        parts.append("opts:\(optionsFingerprint)")
-        if let cacheKey {
-            parts.append("key:\(cacheKey.base)")
-        }
-        return parts.joined(separator: "|")
+        self.storageKey = StorageKey(source: source, options: Self.optionsFingerprint(options), caller: cacheKey)
     }
 
-    private var optionsFingerprint: String {
+    /// Typed identity preserves caller-key equality without retaining source
+    /// bytes or decoded images in the cache. Data is digested once per context.
+    /// A caller key supplements source and extraction options.
+    struct StorageKey: Hashable {
+        let source: SourceIdentity
+        let options: String
+        let caller: AnyHashable?
+    }
+
+    enum SourceIdentity: Hashable {
+        case url(String)
+        case data(SHA256.Digest)
+        case cgImage(ImageIdentity)
+    }
+
+    /// Hash/equality remain fixed even after the source is released. Cache
+    /// lookups separately validate the weak image to reject reused addresses.
+    final class ImageIdentity: Hashable {
+        let id: ObjectIdentifier
+        private(set) weak var image: CGImage?
+
+        init(_ image: CGImage) {
+            self.id = ObjectIdentifier(image)
+            self.image = image
+        }
+
+        static func == (lhs: ImageIdentity, rhs: ImageIdentity) -> Bool { lhs.id == rhs.id }
+        func hash(into hasher: inout Hasher) { hasher.combine(id) }
+    }
+
+    let storageKey: StorageKey
+
+    private static func optionsFingerprint(_ options: ExtractionOptions) -> String {
         // Compact format covering all observable fields. `collectTimings`
         // intentionally skipped (cosmetic, doesn't affect output).
         "c\(options.colorCount)" +
@@ -52,12 +68,12 @@ struct ResolutionContext: Hashable {
         "-ms\(options.minSaturation)" +
         "-fs\(options.fallbackStrategy.hashKey)" +
         "-ao\(options.autoOrient ? "T" : "F")" +
-        "-ds\(downsampleFingerprint)" +
+        "-ds\(downsampleFingerprint(options.downsample))" +
         "-qz\(options.quantizer.hashKey)"
     }
 
-    private var downsampleFingerprint: String {
-        switch options.downsample {
+    private static func downsampleFingerprint(_ downsample: Downsample) -> String {
+        switch downsample {
         case .disabled: return "d"
         case .automatic(let maxPixels): return "a\(maxPixels)"
         case .maxEdge(let edge): return "e\(edge)"
@@ -103,10 +119,14 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
     /// transitions to `.loading` and kicks off an extraction `Task`.
     /// Cancels any in-flight `Task` for a previous context.
     func load(context: ResolutionContext, cache: PaletteCache?) {
+        load(context: context, cache: cache, bypassCache: false)
+    }
+
+    private func load(context: ResolutionContext, cache: PaletteCache?, bypassCache: Bool) {
         // Same context as last call — short-circuit unless we're in a
         // restartable phase (caller can retry .failure or .empty by
         // re-invoking load).
-        if context == lastContext {
+        if !bypassCache, context == lastContext {
             switch phase {
             case .success, .loading:
                 return
@@ -119,7 +139,7 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
         lastContext = context
 
         // Cache hit path — synchronous resolution.
-        if let cache, context.isCacheable, let entry = cache.entry(forKey: context.storageKey) {
+        if !bypassCache, let cache, context.isCacheable, let entry = cache.entry(forKey: context.storageKey) {
             phase = .success(palette: entry.palette, swatches: entry.swatches, fromCache: true)
             onSuccess?(entry.palette, entry.swatches, true)
             return
@@ -154,12 +174,12 @@ final class AsyncPaletteGraphicLoader: ObservableObject {
     }
 
     /// Like ``load(context:cache:)`` but bypasses the same-context
-    /// short-circuit. Use when the underlying source has changed in a
+    /// short-circuit and cache lookup. A fresh result replaces the cache entry.
+    /// Use when the underlying source has changed in a
     /// way the context can't see (e.g., on-disk file rewrite for a URL
     /// that hashes the same).
     func forceLoad(context: ResolutionContext, cache: PaletteCache?) {
-        lastContext = nil
-        load(context: context, cache: cache)
+        load(context: context, cache: cache, bypassCache: true)
     }
 
     /// Cancel any in-flight resolution. Safe to call repeatedly.

@@ -15,12 +15,18 @@ channel values as if they were sRGB during perceptual clustering.
 The resulting ``Palette/colorSpaceUsed`` value records the detected source
 space when the default OKLCH pipeline is used.
 
-> Important: The default OKLCH path converts representative colors back to
-> sRGB and clamps channels to the sRGB range. ``PaletteColor`` stores that
+> Important: The default OKLCH quantization path converts representative colors
+> back to sRGB and clamps channels to the sRGB range. ``PaletteColor`` stores that
 > untagged 8-bit RGB triple, and its SwiftUI `ShapeStyle`, `UIColor`, and
 > ``PaletteColor/cgColor`` adapters emit sRGB-tagged colors. A
 > `colorSpaceUsed` value of `.displayP3` records the detected input in this
 > mode; it does not make the returned RGB values Display P3 coordinates.
+
+If filtering removes every sampled pixel and extraction uses the average
+fallback, that fallback averages the rasterized source channels directly.
+It does not run the OKLCH conversion or convert P3 channels to sRGB. For P3
+sources, these fallback channels therefore retain their source interpretation,
+while the built-in UI adapters still interpret them as sRGB.
 
 ## Why does PaletteKit use OKLCH?
 
@@ -91,7 +97,7 @@ Not through the built-in convenience adapters. `PaletteColor.resolve(in:)`,
 `UIColor(_:)`, and ``PaletteColor/cgColor`` all interpret the returned RGB
 channels as sRGB. This makes their behavior deterministic across UI layers.
 
-The default `.oklch` result cannot be reinterpreted as Display P3 by combining
+A quantized `.oklch` result cannot be reinterpreted as Display P3 by combining
 `colorSpaceUsed` with the raw channels; those channels have already been
 converted to sRGB. If your application requires P3 output, PaletteKit does not
 currently provide an end-to-end color-managed convenience path.
